@@ -1,4 +1,4 @@
-import json
+﻿import json
 import re
 from typing import Any, Dict, Optional
 
@@ -7,9 +7,9 @@ def parse_json(text: str) -> Optional[Dict[str, Any]]:
     """
     LLM 출력에서 JSON만 안전하게 파싱
     우선순위:
-    1) ```json ... ``` 코드블록
-    2) 가장 바깥 { ... }
-    3) raw json 파싱 시도
+    1) ```json ... ``` 코드 블록
+    2) 가장 바깥 { ... } 영역
+    3) raw JSON 파싱 시도
     """
     if not text:
         return None
@@ -20,12 +20,12 @@ def parse_json(text: str) -> Optional[Dict[str, Any]]:
         if block:
             return json.loads(block.group(1))
 
-        # 2. 가장 큰 JSON 객체
+        # 2. 가장 바깥 JSON 객체
         brace = re.search(r"(\{.*\})", text, re.DOTALL)
         if brace:
             return json.loads(brace.group(1))
 
-        # 3. 그냥 파싱
+        # 3. raw JSON 파싱 시도
         return json.loads(text)
 
     except Exception:

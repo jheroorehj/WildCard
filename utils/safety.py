@@ -1,20 +1,19 @@
-import re
+﻿import re
 from typing import List
 
 _ADVICE_PATTERNS: List[str] = [
-    r"해야\s*합니다",
-    r"하세요",
-    r"추천(합니다|드립|해)",
-    r"다음(에는|엔)",
-    r"매수(하세요|하라|를\s*추천)",
-    r"매도(하세요|하라|를\s*추천)",
-    r"전략적으로",
+    r"조언",
+    r"추천",
+    r"(매수|매도|투자)\s*(하세요|해라|하는게|하는 것이)",
+    r"(사라|팔아라|사세요|파세요)",
+    r"(수익|손실)\s*(전망|예측)",
+    r"(목표가|손절|익절)",
 ]
 
 
 def contains_advice(text: str) -> bool:
     """
-    Node3 출력에 '조언/추천'이 섞였는지 탐지
+    Node3 응답에 '조언/추천/투자' 등 행동 제안이 있으면 True를 반환합니다.
     """
     if not text:
         return False
