@@ -11,7 +11,7 @@ WildCard LLM 코어(팩토리)
 
 주의:
 - Kubernetes 배포 환경에서는 ConfigMap/Secret로 env가 주입되므로 .env 로드를 건너뜁니다.
-- 로컬 개발 환경에서는 .env를 자동으로 로드합니다.
+- 로컬 개발 환경에서는 .env.local (우선) 또는 .env를 자동으로 로드합니다.
 """
 
 from __future__ import annotations
@@ -25,12 +25,19 @@ from langchain_upstage import ChatUpstage, UpstageEmbeddings
 
 
 def _load_env_if_local() -> None:
-    """K8s 환경이 아니면 로컬 개발 환경으로 보고 .env를 로드합니다."""
+    """K8s 환경이 아니면 로컬 개발 환경으로 보고 .env 또는 .env.local을 로드합니다."""
     if os.getenv("KUBERNETES_SERVICE_HOST") is None:
         # 현재 작업 디렉터리부터, 그 다음 이 파일 기준으로 상위 탐색
+        # .env.local을 우선적으로 찾고, 없으면 .env를 찾습니다
         for base in (Path.cwd(), Path(__file__).resolve()):
             current = base if base.is_dir() else base.parent
             for parent in [current, *current.parents]:
+                # .env.local 우선
+                candidate_local = parent / ".env.local"
+                if candidate_local.is_file():
+                    load_dotenv(dotenv_path=candidate_local, override=False)
+                    return
+                # .env 대체
                 candidate = parent / ".env"
                 if candidate.is_file():
                     load_dotenv(dotenv_path=candidate, override=False)
