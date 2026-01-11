@@ -3,7 +3,7 @@ from typing import Any, Dict
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from core.llm import get_solar_chat
-from .prommpt import NODE8_SYSTEM_PROMPT
+from .prompt import NODE8_SYSTEM_PROMPT
 from utils.json_parser import parse_json
 from utils.safety import contains_advice
 from utils.validator import validate_node8

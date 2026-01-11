@@ -63,3 +63,10 @@ package-lock.json
 # Frontend build
 frontend/dist/
 frontend/.vite/
+
+# Personal design documents (개인 참고용 설계 문서)
+ARCHITECTURE_DESIGN.md
+CHAT_LOOP_DESIGN.md
+N3_CORRECT_DESIGN.md
+N3_IMPROVEMENT_PLAN.md
+UPDATE_SUMMARY.md
