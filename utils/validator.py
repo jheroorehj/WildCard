@@ -1,9 +1,4 @@
-﻿from typing import Dict, Any
-from N3_Loss_Analyzer.schema import ALLOWED_FACTOR_TYPES, ALLOWED_UNCERTAINTY
-from N6_Stock_Analyst.schema import ALLOWED_TRENDS
-from N7_News_Summarizer.schema import ALLOWED_SENTIMENT
-from N8_Concept_Explainer.schema import ALLOWED_UNCERTAINTY as ALLOWED_CONCEPT_UNCERTAINTY
-from N9_Fallback_Handler.schema import ALLOWED_INTENT_HINT
+from typing import Dict, Any
 
 
 def validate_node3(data: Dict[str, Any]) -> bool:
@@ -11,48 +6,63 @@ def validate_node3(data: Dict[str, Any]) -> bool:
     Node3 출력 JSON 최소 스키마 검증
     검증 실패 시 False 반환 → fallback 사용
     """
+    from N3_Loss_Analyzer.schema import ALLOWED_FACTOR_TYPES, ALLOWED_UNCERTAINTY
 
-    # 1. loss_factors 검증
-    loss_factors = data.get("loss_factors")
-    if not isinstance(loss_factors, list) or len(loss_factors) == 0:
+    def _validate_guideline(block: Dict[str, Any]) -> bool:
+        if not isinstance(block, dict):
+            return False
+        if not isinstance(block.get("objective"), str):
+            return False
+        required_inputs = block.get("required_inputs")
+        if not isinstance(required_inputs, list):
+            return False
+        if any(not isinstance(item, str) for item in required_inputs):
+            return False
+        analysis_steps = block.get("analysis_steps")
+        if not isinstance(analysis_steps, list):
+            return False
+        if any(not isinstance(item, str) for item in analysis_steps):
+            return False
+        output_requirements = block.get("output_requirements")
+        if not isinstance(output_requirements, list):
+            return False
+        if any(not isinstance(item, str) for item in output_requirements):
+            return False
+        return True
+
+    n6 = data.get("n6_tech_indicator_guideline")
+    if not _validate_guideline(n6):
         return False
 
-    for factor in loss_factors:
-        if not isinstance(factor, dict):
-            return False
-
-        if factor.get("type") not in ALLOWED_FACTOR_TYPES:
-            return False
-
-        if not isinstance(factor.get("description"), str):
-            return False
-
-        evidence = factor.get("evidence")
-        if not isinstance(evidence, dict):
-            return False
-
-        if not isinstance(evidence.get("source"), str):
-            return False
-
-        if evidence.get("indicator") != "bollinger_band":
-            return False
-
-        if not isinstance(evidence.get("related_period"), str):
-            return False
-
-    # 2. 선택적 리스트
-    if "behavior_patterns" in data and not isinstance(data["behavior_patterns"], list):
+    n7 = data.get("n7_news_market_guideline")
+    if not _validate_guideline(n7):
         return False
 
-    if "knowledge_gaps" in data and not isinstance(data["knowledge_gaps"], list):
+    n9 = data.get("n9_mistake_pattern_guideline")
+    if not _validate_guideline(n9):
         return False
 
-    if "conversation_intent_hint" in data and not isinstance(
-        data["conversation_intent_hint"], list
-    ):
+    n8 = data.get("n8_loss_cause_guideline")
+    if not isinstance(n8, dict):
+        return False
+    if not isinstance(n8.get("objective"), str):
+        return False
+    if n8.get("loss_cause_count") != 3:
+        return False
+    loss_cause_types = n8.get("loss_cause_types")
+    if not isinstance(loss_cause_types, list):
+        return False
+    if any(item not in ALLOWED_FACTOR_TYPES for item in loss_cause_types):
+        return False
+    if not _validate_guideline(n8):
         return False
 
-    # 3. uncertainty_level 검증
+    global_constraints = data.get("global_constraints")
+    if not isinstance(global_constraints, list):
+        return False
+    if any(not isinstance(item, str) for item in global_constraints):
+        return False
+
     if data.get("uncertainty_level") not in ALLOWED_UNCERTAINTY:
         return False
 
@@ -63,6 +73,9 @@ def validate_node6(data: Dict[str, Any]) -> bool:
     """
     Node6 출력 JSON 최소 스키마 검증
     """
+    from N6_Stock_Analyst.schema import ALLOWED_TRENDS
+    from N3_Loss_Analyzer.schema import ALLOWED_UNCERTAINTY
+
     analysis = data.get("stock_analysis")
     if not isinstance(analysis, dict):
         return False
@@ -111,6 +124,9 @@ def validate_node7(data: Dict[str, Any]) -> bool:
     """
     Node7 출력 JSON 최소 스키마 검증
     """
+    from N7_News_Summarizer.schema import ALLOWED_SENTIMENT
+    from N3_Loss_Analyzer.schema import ALLOWED_UNCERTAINTY
+
     summary = data.get("news_summary")
     if not isinstance(summary, dict):
         return False
@@ -145,6 +161,10 @@ def validate_node8(data: Dict[str, Any]) -> bool:
     """
     Node8 출력 JSON 최소 스키마 검증
     """
+    from N8_Concept_Explainer.schema import (
+        ALLOWED_UNCERTAINTY as ALLOWED_CONCEPT_UNCERTAINTY,
+    )
+
     explanation = data.get("concept_explanation")
     if not isinstance(explanation, dict):
         return False
@@ -175,6 +195,8 @@ def validate_node9(data: Dict[str, Any]) -> bool:
     """
     Node9 출력 JSON 최소 스키마 검증
     """
+    from N9_Fallback_Handler.schema import ALLOWED_INTENT_HINT
+
     response = data.get("fallback_response")
     if not isinstance(response, dict):
         return False
