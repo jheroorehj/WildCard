@@ -1,0 +1,166 @@
+"""
+N9 Fallback Handler 테스트 (단위 테스트 스타일)
+- Node5에서 general_chat로 분기된 입력만 들어온다는 전제
+- 입력: JSON(state)
+- 출력: JSON(dict) only
+"""
+
+from typing import Any, Dict
+
+from n9 import node9_fallback_handler
+
+
+# -----------------------------
+# Fake LLM (LangChain invoke 흉내)
+# -----------------------------
+class _FakeResp:
+    def __init__(self, content: Any):
+        self.content = content
+
+
+class FakeLLM:
+    def __init__(self, content: Any, raise_error: bool = False):
+        self._content = content
+        self._raise_error = raise_error
+
+    def invoke(self, messages):
+        if self._raise_error:
+            raise RuntimeError("LLM invoke failed (fake)")
+        return _FakeResp(self._content)
+
+
+# -----------------------------
+# Helpers
+# -----------------------------
+def _print_case(title: str):
+    print("\n" + "=" * 60)
+    print(title)
+    print("=" * 60)
+
+
+def _pretty(result: Dict[str, Any]):
+    print("출력 원본:", result)
+    n9 = result.get("n9_fallback", {})
+    fr = n9.get("fallback_response", {})
+    print("message:", fr.get("message"))
+    print("intent_hint:", fr.get("intent_hint"))
+
+
+# -----------------------------
+# Test Cases
+# -----------------------------
+def test_ok_json():
+    """
+    LLM이 정상 JSON(dict)을 문자열로 반환 + validate_node9 통과한다고 가정되는 케이스
+    """
+    _print_case("TEST 1) 정상 JSON 응답")
+
+    state = {
+        "user_message": "오늘 기분이 좀 별로야.",
+        "context": "general_chat 흐름"
+    }
+
+    llm_output = """
+    {
+      "fallback_response": {
+        "message": "무슨 일이 있었는지 이야기해도 괜찮아요. 어떤 점이 제일 힘들었나요?",
+        "intent_hint": "general_chat"
+      }
+    }
+    """.strip()
+
+    result = node9_fallback_handler(state, llm=FakeLLM(llm_output))
+    _pretty(result)
+
+
+def test_not_json_fallback():
+    """
+    LLM이 JSON이 아닌 일반 텍스트를 반환 -> parse_json 실패 -> fallback
+    """
+    _print_case("TEST 2) JSON 아님 -> fallback")
+
+    state = {
+        "user_message": "그냥 좀 답답해.",
+        "context": ""
+    }
+
+    llm_output = "그럴 땐 산책을 해보는 게 좋아요."  # JSON 아님
+    result = node9_fallback_handler(state, llm=FakeLLM(llm_output))
+    _pretty(result)
+
+
+def test_schema_invalid_fallback():
+    """
+    LLM이 JSON은 주지만 스키마가 틀린 케이스 -> validate_node9 실패 -> fallback
+    (validate_node9 구현에 따라 실패하도록 일부러 키를 깨뜨림)
+    """
+    _print_case("TEST 3) 스키마 불일치 -> fallback")
+
+    state = {
+        "user_message": "요즘 집중이 안 돼.",
+        "context": ""
+    }
+
+    llm_output = """
+    {
+      "wrong_key": {
+        "text": "괜찮아요."
+      }
+    }
+    """.strip()
+
+    result = node9_fallback_handler(state, llm=FakeLLM(llm_output))
+    _pretty(result)
+
+
+def test_advice_fallback():
+    """
+    LLM이 조언(투자 조언 같은 금지 내용)을 섞어 반환 -> contains_advice 감지 -> fallback
+    contains_advice가 어떤 패턴을 잡는지에 따라 문장을 조정해야 할 수 있음.
+    """
+    _print_case("TEST 4) 조언 감지 -> fallback")
+
+    state = {
+        "user_message": "요즘 주식 때문에 스트레스야.",
+        "context": "general_chat"
+    }
+
+    # contains_advice가 잡을 가능성이 높은 문장(직접 매수/매도 권유 형태)
+    llm_output = """
+    {
+      "fallback_response": {
+        "message": "지금은 분할 매수로 접근하는 게 좋아요.",
+        "intent_hint": "general_chat"
+      }
+    }
+    """.strip()
+
+    result = node9_fallback_handler(state, llm=FakeLLM(llm_output))
+    _pretty(result)
+
+
+def test_llm_error_fallback():
+    """
+    invoke 자체가 에러 -> try/except -> fallback
+    """
+    _print_case("TEST 5) LLM invoke 에러 -> fallback")
+
+    state = {
+        "user_message": "그냥 안부야.",
+        "context": ""
+    }
+
+    result = node9_fallback_handler(state, llm=FakeLLM("", raise_error=True))
+    _pretty(result)
+
+
+if __name__ == "__main__":
+    print("\nN9 테스트 시작")
+
+    test_ok_json()
+    test_not_json_fallback()
+    test_schema_invalid_fallback()
+    test_advice_fallback()
+    test_llm_error_fallback()
+
+    print("\nN9 테스트 종료")
