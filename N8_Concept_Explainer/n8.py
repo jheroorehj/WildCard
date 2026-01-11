@@ -4,6 +4,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from core.llm import get_solar_chat
 from .prompt import NODE8_TERM_EXPLANATION_PROMPT, NODE8_LEARNING_GUIDE_PROMPT
+from .rag import search_term_in_knowledge_base
 from utils.json_parser import parse_json
 from utils.safety import contains_advice
 from utils.validator import validate_node8
@@ -59,8 +60,8 @@ def explain_term(state: Dict[str, Any]) -> Dict[str, Any]:
         return {"n8_concept_explanation": fallback_result("설명할 용어가 제공되지 않았습니다.")}
     
     # RAG 검색 수행 (TODO: RAG 구현 후 활성화)
-    # rag_context = search_term_in_knowledge_base(term)
-    rag_context = ""  # 임시로 빈 문자열
+    rag_context = search_term_in_knowledge_base(term)
+    # rag_context = ""  # 이제 실제 RAG 사용
     
     payload = {
         "term": term,
@@ -76,14 +77,22 @@ def explain_term(state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         response = llm.invoke(messages)
         raw = response.content
-        
+
+        # DEBUG: LLM 원본 응답 출력
+        print(f"[N8 DEBUG] Term: {term}")
+        print(f"[N8 DEBUG] LLM Raw Response:\n{raw}\n")
+
         # 안전성 검사
-        if contains_advice(raw):
+        if contains_investment_advice(raw):
+            print(f"[N8 DEBUG] Safety check failed: contains_advice")
             return {"n8_concept_explanation": fallback_result_term(term)}
-        
+
         # JSON 파싱
         parsed = parse_json(raw)
+        print(f"[N8 DEBUG] Parsed JSON: {parsed}\n")
+
         if not parsed:
+            print(f"[N8 DEBUG] JSON parsing failed")
             return {"n8_concept_explanation": fallback_result_term(term)}
         
         # 스키마 검증 (term_explanation 형태로 변환)
@@ -100,8 +109,10 @@ def explain_term(state: Dict[str, Any]) -> Dict[str, Any]:
             }
             
             if not validate_node8(validation_data):
+                print(f"[N8 DEBUG] Validation failed")
                 return {"n8_concept_explanation": fallback_result_term(term)}
-            
+
+            print(f"[N8 DEBUG] Validation passed ✓")
             return {
                 "n8_concept_explanation": {
                     "mode": "term",
@@ -109,7 +120,8 @@ def explain_term(state: Dict[str, Any]) -> Dict[str, Any]:
                     "learning_guide": None
                 }
             }
-        
+
+        print(f"[N8 DEBUG] 'term_explanation' key not found in parsed JSON")
         return {"n8_concept_explanation": fallback_result_term(term)}
     
     except Exception as e:
@@ -148,7 +160,7 @@ def provide_learning_guide(state: Dict[str, Any]) -> Dict[str, Any]:
         raw = response.content
         
         # 안전성 검사
-        if contains_advice(raw):
+        if contains_investment_advice(raw):
             return {"n8_concept_explanation": fallback_result_learning()}
         
         # JSON 파싱
@@ -246,3 +258,27 @@ def search_term_in_knowledge_base(term: str) -> str:
     """
     # 임시 구현 - 추후 실제 RAG로 교체
     return ""
+
+
+def contains_investment_advice(text: str) -> bool:
+    """
+    N8 전용 안전성 검사
+    
+    용어 설명이나 교육적 내용은 허용하고,
+    직접적인 매수/매도 조언만 차단
+    """
+    import re
+    
+    # 직접적인 행동 유도만 차단
+    strict_advice_patterns = [
+        r"(지금|당장|빨리)\s*(매수|매도|사세요|파세요)",
+        r"(이|저)\s*종목(을|를)\s*(사|팔)",
+        r"목표가\s*\d+원",
+        r"반드시\s*(사|팔|투자)",
+    ]
+    
+    for pattern in strict_advice_patterns:
+        if re.search(pattern, text):
+            return True
+    
+    return False
