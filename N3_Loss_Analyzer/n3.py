@@ -2,7 +2,7 @@
 from langchain_core.messages import SystemMessage, HumanMessage
 
 from core.llm import get_solar_chat
-from .prommpt import NODE3_SYSTEM_PROMPT
+from .prompt import NODE3_SYSTEM_PROMPT
 from utils.json_parser import parse_json
 from utils.validator import validate_node3
 from utils.safety import contains_advice
