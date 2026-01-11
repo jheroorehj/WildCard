@@ -1,49 +1,450 @@
-from typing import Any, Dict
+from typing import Any, Dict, Optional, List
 
-from langchain_core.messages import HumanMessage, SystemMessage
+import yfinance as yf
 
-from core.llm import get_solar_chat
-from .prommpt import NODE6_SYSTEM_PROMPT
-from utils.json_parser import parse_json
-from utils.safety import contains_advice
-from utils.validator import validate_node6
 
 
 def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
-    llm = get_solar_chat()
+    """
+    Node6: 주식 기술적 분석
+    - 종목명, 매수/매도 날짜를 받아서 실제 주가 데이터를 가져옴
+    - 기술적 지표(볼린저밴드, RSI, MACD 등)를 계산
+    - 구조화된 분석 결과를 반환 (LLM 호출 없음)
+    - 반환된 데이터는 N10(요약 노드)에서 LLM이 읽고 요약함
+    """
+    stock_name = state.get("layer1_stock")
+    buy_date = state.get("layer2_buy_date")
+    sell_date = state.get("layer2_sell_date")
+    decision_basis = state.get("layer3_decision_basis")
 
-    payload = {
-        "layer1_stock": state.get("layer1_stock"),
-        "layer2_buy_date": state.get("layer2_buy_date"),
-        "layer2_sell_date": state.get("layer2_sell_date"),
-        "layer3_decision_basis": state.get("layer3_decision_basis"),
+    # 입력 검증
+    if not stock_name or not buy_date or not sell_date:
+        return {"n6_stock_analysis": fallback_result("필수 입력값이 누락되었습니다.")}
+
+    try:
+        # 주가 데이터 가져오기
+        stock_data = fetch_stock_data(stock_name, buy_date, sell_date)
+        if not stock_data:
+            return {"n6_stock_analysis": fallback_result("주가 데이터를 가져올 수 없습니다.")}
+
+        # 기술적 분석 수행
+        analysis_result = perform_technical_analysis(stock_data, buy_date, sell_date)
+
+        # 결과 검증
+        from utils.validator import validate_node6
+
+        if not validate_node6(analysis_result):
+            return {"n6_stock_analysis": fallback_result("분석 결과 검증에 실패했습니다.")}
+
+        return {"n6_stock_analysis": analysis_result}
+
+    except Exception as e:
+        return {"n6_stock_analysis": fallback_result(f"분석 중 오류 발생: {str(e)}")}
+
+
+
+def fetch_stock_data(stock_name: str, start_date: str, end_date: str) -> Optional[Dict[str, Any]]:
+    """
+    yfinance를 사용하여 실제 주가 데이터를 가져오는 함수
+
+    Args:
+        stock_name: 종목명 또는 티커 (예: AAPL, TSLA, 005930.KS)
+        start_date: 시작일 (YYYY-MM-DD)
+        end_date: 종료일 (YYYY-MM-DD)
+
+    Returns:
+        주가 데이터 딕셔너리 또는 None
+    """
+    try:
+        ticker = yf.Ticker(stock_name)
+        hist = ticker.history(start=start_date, end=end_date)
+
+        # 데이터가 비어있는지 확인
+        if hist.empty:
+            return None
+
+        # 데이터프레임을 리스트로 변환
+        return {
+            "ticker": stock_name,
+            "start_date": start_date,
+            "end_date": end_date,
+            "open": hist['Open'].tolist(),
+            "high": hist['High'].tolist(),
+            "low": hist['Low'].tolist(),
+            "close": hist['Close'].tolist(),
+            "volume": hist['Volume'].tolist(),
+            "dates": hist.index.strftime('%Y-%m-%d').tolist()
+        }
+    except Exception as e:
+        print(f"주가 데이터 가져오기 실패: {e}")
+        return None
+
+
+def perform_technical_analysis(stock_data: Dict[str, Any], buy_date: str, sell_date: str) -> Dict[str, Any]:
+    """
+    기술적 분석을 수행하는 함수
+
+    Args:
+        stock_data: fetch_stock_data에서 가져온 주가 데이터
+        buy_date: 매수일
+        sell_date: 매도일
+
+    Returns:
+        구조화된 기술적 분석 결과
+    """
+    close_prices = stock_data.get("close", [])
+    high_prices = stock_data.get("high", [])
+    low_prices = stock_data.get("low", [])
+    volumes = stock_data.get("volume", [])
+
+    # 데이터가 없으면 기본값 반환
+    if not close_prices:
+        return {
+            "stock_analysis": {
+                "ticker": stock_data.get("ticker", "unknown"),
+                "period": {"buy_date": buy_date, "sell_date": sell_date},
+                "summary": "주가 데이터가 충분하지 않습니다.",
+                "price_move": {
+                    "start_price": "unknown",
+                    "end_price": "unknown",
+                    "pct_change": "unknown",
+                    "highest": "unknown",
+                    "lowest": "unknown"
+                },
+                "trend": "sideways",
+                "indicators": [],
+                "volume_analysis": {
+                    "average_volume": "unknown",
+                    "trend": "unknown",
+                    "anomalies": []
+                },
+                "risk_notes": ["데이터 부족"],
+                "uncertainty_level": "high"
+            }
+        }
+
+    # 가격 분석
+    start_price = close_prices[0]
+    end_price = close_prices[-1]
+    pct_change = ((end_price - start_price) / start_price) * 100
+    highest = max(high_prices)
+    lowest = min(low_prices)
+
+    # 추세 판단 (간단한 로직)
+    if pct_change > 5:
+        trend = "up"
+    elif pct_change < -5:
+        trend = "down"
+    else:
+        trend = "sideways"
+
+    # 볼린저 밴드 계산
+    bb_result = calculate_bollinger_bands(close_prices)
+
+    # RSI 계산
+    rsi_values = calculate_rsi(close_prices)
+    current_rsi = rsi_values[-1] if rsi_values else None
+
+    # MACD 계산
+    macd_result = calculate_macd(close_prices)
+
+    # 지표 해석
+    indicators = []
+
+    # 볼린저 밴드 해석
+    if bb_result and bb_result.get('upper') and bb_result.get('lower'):
+        last_price = close_prices[-1]
+        upper_band = bb_result['upper'][-1]
+        lower_band = bb_result['lower'][-1]
+
+        if last_price > upper_band:
+            bb_interp = "상단 밴드 돌파 - 과매수 구간"
+        elif last_price < lower_band:
+            bb_interp = "하단 밴드 이탈 - 과매도 구간"
+        else:
+            bb_interp = "밴드 내 정상 범위"
+
+        indicators.append({
+            "name": "bollinger_band",
+            "value": f"Upper: {upper_band:.2f}, Lower: {lower_band:.2f}",
+            "interpretation": bb_interp
+        })
+
+    # RSI 해석
+    if current_rsi:
+        if current_rsi > 70:
+            rsi_interp = "과매수 구간"
+        elif current_rsi < 30:
+            rsi_interp = "과매도 구간"
+        else:
+            rsi_interp = "중립 구간"
+
+        indicators.append({
+            "name": "rsi",
+            "value": f"{current_rsi:.2f}",
+            "interpretation": rsi_interp
+        })
+
+    # MACD 해석
+    if macd_result and macd_result.get('macd') and macd_result.get('signal'):
+        macd_line = macd_result['macd']
+        signal_line = macd_result['signal']
+
+        current_macd = macd_line[-1]
+        current_signal = signal_line[-1]
+
+        if current_macd > current_signal:
+            macd_interp = "골든크로스 - 상승 신호"
+        else:
+            macd_interp = "데드크로스 - 하락 신호"
+
+        indicators.append({
+            "name": "macd",
+            "value": f"MACD: {current_macd:.2f}, Signal: {current_signal:.2f}",
+            "interpretation": macd_interp
+        })
+
+    # 거래량 분석
+    avg_volume = sum(volumes) / len(volumes) if volumes else 0
+
+    # 리스크 노트 생성
+    risk_notes = []
+    if abs(pct_change) > 20:
+        risk_notes.append("높은 변동성 구간")
+    if current_rsi and current_rsi > 70:
+        risk_notes.append("과매수 구간 - 조정 가능성")
+    if current_rsi and current_rsi < 30:
+        risk_notes.append("과매도 구간 - 반등 가능성")
+
+    # 불확실성 레벨 판단
+    if len(close_prices) < 20:
+        uncertainty = "high"
+    elif abs(pct_change) > 15:
+        uncertainty = "medium"
+    else:
+        uncertainty = "low"
+
+    result = {
+        "stock_analysis": {
+            "ticker": stock_data.get("ticker", "unknown"),
+            "period": {
+                "buy_date": buy_date,
+                "sell_date": sell_date
+            },
+            "summary": f"{stock_data.get('ticker')} 종목의 기술적 분석 결과입니다. 기간 동안 {pct_change:.2f}%의 수익률을 기록했습니다.",
+            "price_move": {
+                "start_price": f"{start_price:.2f}",
+                "end_price": f"{end_price:.2f}",
+                "pct_change": f"{pct_change:.2f}%",
+                "highest": f"{highest:.2f}",
+                "lowest": f"{lowest:.2f}"
+            },
+            "trend": trend,
+            "indicators": indicators if indicators else [
+                {
+                    "name": "bollinger_band",
+                    "value": "unknown",
+                    "interpretation": "데이터 부족으로 계산 불가"
+                }
+            ],
+            "volume_analysis": {
+                "average_volume": f"{avg_volume:.0f}",
+                "trend": "증가" if volumes and volumes[-1] > avg_volume else "감소",
+                "anomalies": []
+            },
+            "risk_notes": risk_notes if risk_notes else ["정상 범위"],
+            "uncertainty_level": uncertainty
+        }
     }
 
-    messages = [
-        SystemMessage(content=NODE6_SYSTEM_PROMPT),
-        HumanMessage(content=f"주가 흐름과 지표를 요약해 주세요.\n{payload}"),
-    ]
-
-    response = llm.invoke(messages)
-    raw = response.content
-
-    if contains_advice(raw):
-        return {"n6_stock_analysis": fallback_result()}
-
-    parsed = parse_json(raw)
-    if not parsed:
-        return {"n6_stock_analysis": fallback_result()}
-
-    if not validate_node6(parsed):
-        return {"n6_stock_analysis": fallback_result()}
-
-    return {"n6_stock_analysis": parsed}
+    return result
 
 
-def fallback_result() -> Dict[str, Any]:
+def calculate_bollinger_bands(prices: List[float], period: int = 20, std_dev: int = 2) -> Optional[Dict[str, List[float]]]:
+    """
+    볼린저 밴드 계산
+
+    Args:
+        prices: 종가 리스트
+        period: 이동평균 기간 (기본 20일)
+        std_dev: 표준편차 배수 (기본 2)
+
+    Returns:
+        {'upper': 상단밴드, 'middle': 중간밴드(SMA), 'lower': 하단밴드}
+    """
+    if len(prices) < period:
+        return None
+
+    upper_band = []
+    middle_band = []
+    lower_band = []
+
+    for i in range(len(prices)):
+        if i < period - 1:
+            upper_band.append(None)
+            middle_band.append(None)
+            lower_band.append(None)
+        else:
+            # 이동평균 계산
+            window = prices[i - period + 1:i + 1]
+            sma = sum(window) / period
+
+            # 표준편차 계산
+            variance = sum((x - sma) ** 2 for x in window) / period
+            std = variance ** 0.5
+
+            middle_band.append(sma)
+            upper_band.append(sma + (std * std_dev))
+            lower_band.append(sma - (std * std_dev))
+
+    # None이 아닌 값만 반환
+    valid_upper = [x for x in upper_band if x is not None]
+    valid_middle = [x for x in middle_band if x is not None]
+    valid_lower = [x for x in lower_band if x is not None]
+
+    if not valid_upper:
+        return None
+
+    return {
+        'upper': valid_upper,
+        'middle': valid_middle,
+        'lower': valid_lower
+    }
+
+
+def calculate_rsi(prices: List[float], period: int = 14) -> Optional[List[float]]:
+    """
+    RSI (Relative Strength Index) 계산
+
+    Args:
+        prices: 종가 리스트
+        period: RSI 계산 기간 (기본 14일)
+
+    Returns:
+        RSI 값 리스트 (0~100)
+    """
+    if len(prices) < period + 1:
+        return None
+
+    rsi_values = []
+    gains = []
+    losses = []
+
+    # 가격 변화 계산
+    for i in range(1, len(prices)):
+        change = prices[i] - prices[i - 1]
+        if change > 0:
+            gains.append(change)
+            losses.append(0)
+        else:
+            gains.append(0)
+            losses.append(abs(change))
+
+    # 첫 RSI 계산 (단순 평균)
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
+
+    if avg_loss == 0:
+        rsi = 100
+    else:
+        rs = avg_gain / avg_loss
+        rsi = 100 - (100 / (1 + rs))
+
+    rsi_values.append(rsi)
+
+    # 이후 RSI 계산 (평활 이동평균)
+    for i in range(period, len(gains)):
+        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
+
+        if avg_loss == 0:
+            rsi = 100
+        else:
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+
+        rsi_values.append(rsi)
+
+    return rsi_values
+
+
+def calculate_macd(prices: List[float], fast: int = 12, slow: int = 26, signal: int = 9) -> Optional[Dict[str, List[float]]]:
+    """
+    MACD (Moving Average Convergence Divergence) 계산
+
+    Args:
+        prices: 종가 리스트
+        fast: 빠른 EMA 기간 (기본 12일)
+        slow: 느린 EMA 기간 (기본 26일)
+        signal: 시그널 라인 EMA 기간 (기본 9일)
+
+    Returns:
+        {'macd': MACD 라인, 'signal': 시그널 라인, 'histogram': 히스토그램}
+    """
+    if len(prices) < slow + signal:
+        return None
+
+    # EMA 계산 함수
+    def calculate_ema(data: List[float], period: int) -> List[float]:
+        ema = []
+        multiplier = 2 / (period + 1)
+
+        # 첫 EMA는 SMA로 시작
+        sma = sum(data[:period]) / period
+        ema.append(sma)
+
+        # 이후 EMA 계산
+        for i in range(period, len(data)):
+            ema_value = (data[i] - ema[-1]) * multiplier + ema[-1]
+            ema.append(ema_value)
+
+        return ema
+
+    # Fast EMA와 Slow EMA 계산
+    fast_ema = calculate_ema(prices, fast)
+    slow_ema = calculate_ema(prices, slow)
+
+    # MACD 라인 계산 (Fast EMA - Slow EMA)
+    # slow EMA 길이에 맞춰 조정
+    offset = slow - fast
+    macd_line = []
+    for i in range(len(slow_ema)):
+        macd_value = fast_ema[i + offset] - slow_ema[i]
+        macd_line.append(macd_value)
+
+    # Signal 라인 계산 (MACD의 EMA)
+    signal_line = calculate_ema(macd_line, signal)
+
+    # Histogram 계산 (MACD - Signal)
+    histogram = []
+    signal_offset = signal - 1
+    for i in range(len(signal_line)):
+        hist_value = macd_line[i + signal_offset] - signal_line[i]
+        histogram.append(hist_value)
+
+    # 길이 맞추기
+    final_macd = macd_line[signal_offset:]
+
+    return {
+        'macd': final_macd,
+        'signal': signal_line,
+        'histogram': histogram
+    }
+
+
+def fallback_result(error_message: str = "데이터를 확보하지 못했습니다.") -> Dict[str, Any]:
+    """
+    에러 발생 시 반환할 기본 결과
+
+    Args:
+        error_message: 에러 메시지
+
+    Returns:
+        기본 분석 결과 구조
+    """
     return {
         "stock_analysis": {
-            "summary": "주가 흐름 정보를 확보하지 못했습니다.",
+            "summary": f"주가 흐름 정보를 확보하지 못했습니다. ({error_message})",
             "price_move": {
                 "start_price": "unknown",
                 "end_price": "unknown",
@@ -57,7 +458,7 @@ def fallback_result() -> Dict[str, Any]:
                     "interpretation": "지표 값을 계산하지 못했습니다.",
                 }
             ],
-            "risk_notes": ["데이터 소스가 연결되지 않았습니다."],
+            "risk_notes": ["데이터 소스가 연결되지 않았습니다.", error_message],
             "uncertainty_level": "high",
         }
     }
