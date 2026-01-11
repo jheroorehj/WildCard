@@ -1,6 +1,5 @@
 """
 N9 Fallback Handler 테스트 (단위 테스트 스타일)
-- Node5에서 general_chat로 분기된 입력만 들어온다는 전제
 - 입력: JSON(state)
 - 출력: JSON(dict) only
 """
