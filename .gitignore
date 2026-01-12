@@ -50,8 +50,8 @@ logs/
 .coverage
 htmlcov/
 .pytest_cache/
-test_*.py
-**/test_*.py
+test_*
+**/test_*
 
 # Node.js
 node_modules/
