@@ -2,38 +2,55 @@ from __future__ import annotations
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import multiprocessing
+import time
 from typing import Any, Dict, Tuple
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from core.llm import get_solar_chat
 from utils.json_parser import parse_json
-
 from .prompt import NODE5_ROUTER_PROMPT
+
+# Lazy imports for node functions (to avoid circular dependencies and missing dependencies)
+_node_functions = {}
+
+
+def _get_node_function(node_name: str):
+    """Lazy import node functions on demand."""
+    if node_name not in _node_functions:
+        if node_name == "N6":
+            from N6_Stock_Analyst.n6 import node6_stock_analyst
+            _node_functions["N6"] = node6_stock_analyst
+        elif node_name == "N7":
+            from N7_News_Summarizer.n7 import node7_news_summarizer
+            _node_functions["N7"] = node7_news_summarizer
+        elif node_name == "N8":
+            from N8_Concept_Explainer.n8 import node8_concept_explainer
+            _node_functions["N8"] = node8_concept_explainer
+        elif node_name == "N9":
+            from N9_Fallback_Handler.n9 import node9_fallback_handler
+            _node_functions["N9"] = node9_fallback_handler
+        else:
+            raise ValueError(f"Unknown node: {node_name}")
+    return _node_functions[node_name]
 
 
 def _run_node(node_name: str, payload: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
-    if node_name == "N6":
-        from N6_Stock_Analyst.n6 import node6_stock_analyst
+    """Execute a single node and return its result."""
+    start_time = time.time()
 
-        return node_name, node6_stock_analyst(payload)
+    try:
+        node_func = _get_node_function(node_name)
+        result = node_name, node_func(payload)
 
-    if node_name == "N7":
-        from N7_News_Summarizer.n7 import node7_news_summarizer
+        elapsed = time.time() - start_time
+        print(f"[N5] {node_name} completed in {elapsed:.2f}s")
+        return result
 
-        return node_name, node7_news_summarizer(payload)
-
-    if node_name == "N8":
-        from N8_Concept_Explainer.n8 import node8_concept_explainer
-
-        return node_name, node8_concept_explainer(payload)
-
-    if node_name == "N9":
-        from N9_Fallback_Handler.n9 import node9_fallback_handler
-
-        return node_name, node9_fallback_handler(payload)
-
-    return node_name, {"error": f"Unknown node: {node_name}"}
+    except Exception as e:
+        elapsed = time.time() - start_time
+        print(f"[N5] {node_name} failed after {elapsed:.2f}s: {e}")
+        raise
 
 
 def _build_n8_fallback(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -98,6 +115,9 @@ def node5_parallel_router(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Node5: N3 결과를 바탕으로 N6~N9을 멀티프로세싱으로 병렬 실행.
     """
+    print("[N5] Starting parallel router...")
+    start_time = time.time()
+
     base_payload = {
         "layer1_stock": state.get("layer1_stock"),
         "layer2_buy_date": state.get("layer2_buy_date"),
@@ -123,7 +143,10 @@ def node5_parallel_router(state: Dict[str, Any]) -> Dict[str, Any]:
         },
     }
 
+    print("[N5] Routing with LLM...")
     routed = _route_with_llm(state)
+    print(f"[N5] LLM routing completed: {list(routed.keys()) if isinstance(routed, dict) else 'fallback'}")
+
     payloads = {
         "N6": _merge_payload(fallback_payloads["N6"], routed.get("n6_input") if isinstance(routed, dict) else None),
         "N7": _merge_payload(fallback_payloads["N7"], routed.get("n7_input") if isinstance(routed, dict) else None),
@@ -131,6 +154,7 @@ def node5_parallel_router(state: Dict[str, Any]) -> Dict[str, Any]:
         "N9": _merge_payload(fallback_payloads["N9"], routed.get("n9_input") if isinstance(routed, dict) else None),
     }
 
+    print("[N5] Starting parallel execution of N6, N7, N8, N9...")
     results: Dict[str, Dict[str, Any]] = {}
     ctx = multiprocessing.get_context("spawn")
     with ProcessPoolExecutor(max_workers=4, mp_context=ctx) as executor:
@@ -165,4 +189,6 @@ def node5_parallel_router(state: Dict[str, Any]) -> Dict[str, Any]:
             )
         }
 
+    elapsed = time.time() - start_time
+    print(f"[N5] Parallel router completed in {elapsed:.2f}s")
     return merged
