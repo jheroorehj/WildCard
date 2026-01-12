@@ -1,0 +1,7 @@
+fastapi==0.115.6
+uvicorn==0.30.6
+langchain-core==0.3.31
+langchain-upstage==0.3.0
+python-dotenv==1.0.1
+yfinance==0.2.43
+requests==2.32.3
