@@ -19,6 +19,11 @@ const App: React.FC = () => {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
+  const [reportExpanded, setReportExpanded] = useState<boolean>(true);
+  const [marketExpanded, setMarketExpanded] = useState<boolean>(true);
+  const [techExpanded, setTechExpanded] = useState<boolean>(true);
+  const [showMarket, setShowMarket] = useState<boolean>(true);
+  const [showTech, setShowTech] = useState<boolean>(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Initial Splash Screen effect
@@ -59,6 +64,11 @@ const App: React.FC = () => {
       const result = await analyzeInvestmentLoss(formData);
       setAnalysis(result);
       setMessages([]); // Clear previous session messages
+      setReportExpanded(true);
+      setMarketExpanded(true);
+      setTechExpanded(true);
+      setShowMarket(true);
+      setShowTech(true);
       setView('analysis');
     } catch (error) {
       console.error(error);
@@ -118,7 +128,7 @@ const App: React.FC = () => {
         </div>
         <div className="mt-12 text-center space-y-3">
           <h1 className="text-4xl font-black tracking-tighter text-white">WILDCARD</h1>
-          <p className="text-blue-400 font-bold tracking-[0.3em] text-[10px] uppercase opacity-80">Loss Analysis Engine</p>
+          <p className="text-blue-400 font-bold tracking-[0.3em] text-[20px] uppercase opacity-80">Loss Analysis Engine</p>
         </div>
         <div className="absolute bottom-12 text-center">
             <p className="text-slate-500 text-sm font-medium animate-bounce">투자 패턴 분석의 새로운 기준</p>
@@ -150,7 +160,7 @@ const App: React.FC = () => {
 
         <header className="px-6 pt-6 pb-2 flex justify-between items-center shrink-0 z-20">
           <div className="flex items-center gap-2 group cursor-pointer">
-            <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center font-black text-[11px] shadow-lg shadow-blue-600/20">W</div>
+            <div className="w-6 h-6 bg-blue-600 rounded-lg flex items-center justify-center font-black text-[22px] shadow-lg shadow-blue-600/20">W</div>
             <span className="font-black tracking-tighter text-lg leading-none">WILDCARD</span>
           </div>
           <button className="p-2 text-slate-400 hover:text-white transition-colors">
@@ -176,11 +186,11 @@ const App: React.FC = () => {
           >
             <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 blur-[30px] rounded-full -mr-12 -mt-12 group-hover:scale-110 transition-transform duration-500"></div>
             <div className="relative z-10 text-left mb-8">
-              <span className="bg-white/20 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">AI 분석 시작</span>
+              <span className="bg-white/20 px-2 py-0.5 rounded-full text-[18px] font-bold uppercase tracking-wider">AI 분석 시작</span>
               <h3 className="text-xl font-black mt-3 tracking-tight">손실 패턴 분석하러가기</h3>
             </div>
             <div className="relative z-10 flex justify-between items-center">
-              <p className="text-blue-100 text-[10px] font-medium opacity-80">원하는 종목을 지금 분석해보세요</p>
+              <p className="text-blue-100 text-[20px] font-medium opacity-80">원하는 종목을 지금 분석해보세요</p>
               <div className="bg-white text-blue-600 p-1.5 rounded-full shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
               </div>
@@ -189,14 +199,14 @@ const App: React.FC = () => {
 
           <div className="mt-6 grid grid-cols-2 gap-3">
             <div className="bg-slate-900/50 rounded-2xl p-4">
-              <p className="text-slate-500 text-[9px] font-bold uppercase tracking-wider mb-1">나의 분석 횟수</p>
+              <p className="text-slate-500 text-[18px] font-bold uppercase tracking-wider mb-1">나의 분석 횟수</p>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold">12</span>
-                <span className="text-slate-400 text-[10px]">건</span>
+                <span className="text-slate-400 text-[20px]">건</span>
               </div>
             </div>
             <div className="bg-slate-900/50 rounded-2xl p-4">
-              <p className="text-slate-500 text-[9px] font-bold uppercase tracking-wider mb-1">학습 성취도</p>
+              <p className="text-slate-500 text-[18px] font-bold uppercase tracking-wider mb-1">학습 성취도</p>
               <div className="flex items-baseline gap-1">
                 <span className="text-xl font-bold text-green-400">84%</span>
               </div>
@@ -217,7 +227,7 @@ const App: React.FC = () => {
                 <div key={i} className="bg-slate-900/30 rounded-xl p-3.5 flex justify-between items-center group hover:bg-slate-900/50 transition-colors cursor-pointer">
                   <div>
                     <h5 className="font-bold text-sm text-slate-200">{item.name}</h5>
-                    <p className="text-[9px] text-slate-500">{item.date} • {item.type}</p>
+                    <p className="text-[18px] text-slate-500">{item.date} • {item.type}</p>
                   </div>
                   <div className="text-slate-600 group-hover:text-slate-400 transition-colors">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>
@@ -312,7 +322,7 @@ const App: React.FC = () => {
           <h1 className="text-sm font-bold text-white leading-tight">{formData.stockName} 투자 분석 노트</h1>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse"></span>
-            <span className="text-[9px] text-emerald-500 font-bold uppercase tracking-widest">실시간 튜터링 활성화</span>
+            <span className="text-[12px] text-emerald-500 font-bold uppercase tracking-widest">실시간 튜터링 활성화</span>
           </div>
         </div>
       </header>
@@ -325,93 +335,184 @@ const App: React.FC = () => {
         {analysis && (
           <div className="space-y-4">
             <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4">
-              <div className="flex items-center gap-2 mb-3">
-                <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-tight">손실 복기 요약</h4>
+              <div className="flex items-center justify-between mb-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAnalysis(null);
+                    setMessages([]);
+                    setReportExpanded(true);
+                    setMarketExpanded(true);
+                    setTechExpanded(true);
+                    setShowMarket(true);
+                    setShowTech(true);
+                  }}
+                  className="text-slate-400 hover:text-white text-[20px] font-black"
+                  aria-label="답변 지우기"
+                >
+                  X
+                </button>
+                <h4 className="text-blue-400 text-[20px] font-black uppercase tracking-tight">손실 복기 요약</h4>
+                <button
+                  type="button"
+                  onClick={() => setReportExpanded(prev => !prev)}
+                  className="text-slate-400 hover:text-white text-[20px] font-black"
+                  aria-label="답변 접기/펼치기"
+                >
+                  {reportExpanded ? '-' : '+'}
+                </button>
               </div>
               {report ? (
                 <>
                   <p className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">{report.report_title}</p>
-                  <p className="mt-2 text-slate-300 leading-relaxed text-xs whitespace-pre-wrap opacity-90">{report.overall_summary}</p>
+                  {reportExpanded ? (
+                    <p className="mt-2 text-slate-300 leading-relaxed text-xs whitespace-pre-wrap opacity-90">{report.overall_summary}</p>
+                  ) : null}
                 </>
               ) : (
-                <p className="text-slate-500 text-sm">No summary available.</p>
+                <p className="text-slate-500 text-sm">요약이 없습니다.</p>
               )}
             </section>
 
-            <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-75">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="text-purple-400 scale-75">{ICONS.Search}</div>
-                <h4 className="text-purple-400 text-[10px] font-black uppercase tracking-tight">시장 상황</h4>
-              </div>
-              {report ? (
-                <div className="space-y-2 text-xs text-slate-300">
-                  <p className="leading-relaxed whitespace-pre-wrap opacity-90">{report.node_summaries.n7.summary}</p>
-                  <div className="space-y-1 text-slate-400">
-                    {report.node_summaries.n7.details.map((detail, idx) => (
-                      <div key={idx}>- {detail}</div>
-                    ))}
+            {showMarket ? (
+              <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-75">
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowMarket(false)}
+                    className="text-slate-400 hover:text-white text-[20px] font-black"
+                    aria-label="시장 상황 숨기기"
+                  >
+                    X
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="text-purple-400 scale-75">{ICONS.Search}</div>
+                    <h4 className="text-purple-400 text-[20px] font-black uppercase tracking-tight">시장 상황</h4>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setMarketExpanded(prev => !prev)}
+                    className="text-slate-400 hover:text-white text-[20px] font-black"
+                    aria-label="시장 상황 접기/펼치기"
+                  >
+                    {marketExpanded ? '-' : '+'}
+                  </button>
                 </div>
-              ) : (
-                <p className="text-slate-500 text-xs">No market summary.</p>
-              )}
-            </section>
+                {report ? (
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <p className="leading-relaxed whitespace-pre-wrap opacity-90">{report.node_summaries.n7.summary}</p>
+                    {marketExpanded ? (
+                      <div className="space-y-1 text-slate-400">
+                        {report.node_summaries.n7.details.map((detail, idx) => (
+                          <div key={idx}>- {detail}</div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-xs">시장 요약이 없습니다.</p>
+                )}
+              </section>
+            ) : null}
 
-            <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-75">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="text-blue-400 scale-75">{ICONS.Lightbulb}</div>
-                <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-tight">기술적 요약</h4>
-              </div>
-              {report ? (
-                <div className="space-y-2 text-xs text-slate-300">
-                  <p className="leading-relaxed whitespace-pre-wrap opacity-90">{report.node_summaries.n6.summary}</p>
-                  <div className="space-y-1 text-slate-400">
-                    {report.node_summaries.n6.details.map((detail, idx) => (
-                      <div key={idx}>- {detail}</div>
-                    ))}
+            {showTech ? (
+              <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-75">
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowTech(false)}
+                    className="text-slate-400 hover:text-white text-[20px] font-black"
+                    aria-label="기술적 요약 숨기기"
+                  >
+                    X
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="text-blue-400 scale-75">{ICONS.Lightbulb}</div>
+                    <h4 className="text-blue-400 text-[20px] font-black uppercase tracking-tight">기술적 요약</h4>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setTechExpanded(prev => !prev)}
+                    className="text-slate-400 hover:text-white text-[20px] font-black"
+                    aria-label="기술적 요약 접기/펼치기"
+                  >
+                    {techExpanded ? '-' : '+'}
+                  </button>
                 </div>
-              ) : (
-                <p className="text-slate-500 text-xs">No technical summary.</p>
-              )}
-            </section>
+                {report ? (
+                  <div className="space-y-2 text-xs text-slate-300">
+                    <p className="leading-relaxed whitespace-pre-wrap opacity-90">{report.node_summaries.n6.summary}</p>
+                    {techExpanded ? (
+                      <div className="space-y-1 text-slate-400">
+                        {report.node_summaries.n6.details.map((detail, idx) => (
+                          <div key={idx}>- {detail}</div>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="text-slate-500 text-xs">기술 요약이 없습니다.</p>
+                )}
+              </section>
+            ) : null}
 
             <section className="bg-slate-900/60 border border-blue-500/10 p-5 rounded-3xl shadow-xl animate-in fade-in slide-in-from-bottom-4 delay-150">
               <div className="flex items-center gap-2 mb-3">
                 <div className="text-white scale-75">{ICONS.Lightbulb}</div>
-                <h4 className="text-white text-[10px] font-black uppercase tracking-tight">학습 경로</h4>
+                <h4 className="text-white text-[20px] font-black uppercase tracking-tight">학습 경로</h4>
               </div>
               {report ? (
                 <div className="space-y-3">
-                  <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
-                    {report.learning_materials.key_takeaways.join(' ? ') || 'No takeaways'}
+                  <p className="text-[14px] text-slate-400 font-medium leading-relaxed">
+                    {report.learning_materials.key_takeaways.join(' · ') || '요약 없음'}
                   </p>
                   <div className="space-y-2 pt-1">
                     {report.learning_materials.practice_steps.map((item, idx) => (
                       <div key={idx} className="flex items-start gap-2.5 group">
                         <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform"></div>
-                        <p className="text-[12px] text-slate-200 font-medium leading-tight">{item}</p>
+                        <p className="text-[16px] text-slate-200 font-medium leading-tight">{item}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">No learning guide.</p>
+                <p className="text-[14px] text-slate-500 font-medium leading-relaxed">학습 가이드가 없습니다.</p>
               )}
             </section>
 
             <div className="px-3 py-3 border-l-2 border-emerald-500/50 bg-emerald-500/5 rounded-r-xl">
-               <p className="text-emerald-400/90 text-[11px] italic font-medium">"{report?.node_summaries.n9.summary || 'No additional guidance.'}"</p>
+               <p className="text-emerald-400/90 text-[14px] italic font-medium">"{report?.node_summaries.n9.summary || '추가 안내가 없습니다.'}"</p>
             </div>
           </div>
         )}
 
         {/* Additional Context Cards */}
-        {messages.filter(m => m.role === 'assistant').map((msg, i) => (
-          <section key={i} className="bg-slate-900/60 border-l-2 border-blue-600 p-5 rounded-r-3xl shadow-lg animate-in fade-in slide-in-from-bottom-6">
+        {messages.map((msg, i) => (
+          <section
+            key={i}
+            className={
+              msg.role === 'user'
+                ? 'bg-slate-900/40 border-r-2 border-emerald-500 p-5 rounded-l-3xl shadow-lg animate-in fade-in slide-in-from-bottom-6'
+                : 'bg-slate-900/60 border-l-2 border-blue-600 p-5 rounded-r-3xl shadow-lg animate-in fade-in slide-in-from-bottom-6'
+            }
+          >
             <div className="flex items-center gap-2 mb-2">
-              <div className="w-0.5 h-2.5 bg-blue-500 rounded-full"></div>
-              <h4 className="text-blue-400 text-[9px] font-black uppercase tracking-widest">추가 인사이트</h4>
+              <div
+                className={
+                  msg.role === 'user'
+                    ? 'w-0.5 h-2.5 bg-emerald-400 rounded-full'
+                    : 'w-0.5 h-2.5 bg-blue-500 rounded-full'
+                }
+              ></div>
+              <h4
+                className={
+                  msg.role === 'user'
+                    ? 'text-emerald-400 text-[18px] font-black uppercase tracking-widest'
+                    : 'text-blue-400 text-[18px] font-black uppercase tracking-widest'
+                }
+              >
+                {msg.role === 'user' ? '내 질문' : '추가 인사이트'}
+              </h4>
             </div>
             <p className="text-slate-200 text-xs leading-relaxed whitespace-pre-wrap">{msg.content}</p>
           </section>
@@ -424,7 +525,7 @@ const App: React.FC = () => {
               <button
                 key={i}
                 onClick={() => handleSendMessage(q)}
-                className="bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-[10px] px-3 py-1.5 rounded-full border border-white/5 transition-all active:scale-95"
+                className="bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white text-[14px] px-3 py-1.5 rounded-full border border-white/5 transition-all active:scale-95"
               >
                 {q}
               </button>
