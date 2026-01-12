@@ -175,11 +175,44 @@ def node5_parallel_router(state: Dict[str, Any]) -> Dict[str, Any]:
         "N9": _merge_payload(fallback_payloads["N9"], routed.get("n9_input") if isinstance(routed, dict) else None),
     }
 
-    print("[N5] Starting parallel execution of N6, N7, N8, N9...")
+    # Step 1: Execute N6 first (sequential)
+    print("[N5] Executing N6 first (sequential)...")
     results: Dict[str, Dict[str, Any]] = {}
+    n6_available = False
+
+    try:
+        _, n6_result = _run_node("N6", payloads["N6"])
+        results["N6"] = n6_result
+        n6_available = True
+    except Exception as exc:
+        print(f"[N5] N6 failed, continuing without N6 data: {exc}")
+        results["N6"] = {
+            "n6_stock_analysis": {
+                "error": f"N6 실행 실패: {exc}",
+                "uncertainty_level": "high",
+            }
+        }
+
+    # Step 2: Add N6 results to N7~N9 payloads (if N6 succeeded)
+    if n6_available:
+        n6_stock_analysis = results["N6"].get("n6_stock_analysis")
+        if n6_stock_analysis:
+            print("[N5] Adding N6 results to N7, N8, N9 payloads...")
+            payloads["N7"]["n6_stock_analysis"] = n6_stock_analysis
+            payloads["N8"]["n6_stock_analysis"] = n6_stock_analysis
+            payloads["N9"]["n6_stock_analysis"] = n6_stock_analysis
+
+    # Step 3: Execute N7, N8, N9 in parallel
+    print("[N5] Starting parallel execution of N7, N8, N9...")
     ctx = multiprocessing.get_context("spawn")
-    with ProcessPoolExecutor(max_workers=4, mp_context=ctx) as executor:
-        futures = {executor.submit(_run_node, name, payload): name for name, payload in payloads.items()}
+    parallel_payloads = {
+        "N7": payloads["N7"],
+        "N8": payloads["N8"],
+        "N9": payloads["N9"],
+    }
+
+    with ProcessPoolExecutor(max_workers=3, mp_context=ctx) as executor:
+        futures = {executor.submit(_run_node, name, payload): name for name, payload in parallel_payloads.items()}
         for future in as_completed(futures):
             name = futures[future]
             try:

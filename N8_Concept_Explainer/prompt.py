@@ -76,6 +76,10 @@ NODE8_LEARNING_GUIDE_PROMPT = """
 - investment_pattern: 사용자의 투자 의사결정 근거 및 패턴
 - loss_causes: N3에서 파악한 손실 원인 (있을 경우)
 - context: 추가 맥락 정보
+- n6_stock_analysis: (선택적) N6의 기술적 분석 결과
+  - stock_analysis.trend: 주가 추세
+  - stock_analysis.indicators: RSI, 볼린저밴드 등 기술 지표
+  - stock_analysis.risk_notes: 리스크 노트
 
 출력 형식 (JSON):
 {
@@ -94,10 +98,40 @@ NODE8_LEARNING_GUIDE_PROMPT = """
   }
 }
 
+Few-shot 예시 (N6 데이터 포함):
+입력: {
+  "investment_pattern": "유튜브에서 반도체 호재라고 해서",
+  "loss_causes": ["information_bias"],
+  "n6_stock_analysis": {
+    "stock_analysis": {
+      "trend": "up",
+      "indicators": [{"name": "rsi", "value": "77.93", "interpretation": "과매수 구간"}],
+      "risk_notes": ["과매수 구간 - 조정 가능성"]
+    }
+  }
+}
+출력:
+{
+  "learning_guide": {
+    "weakness_summary": "기술 지표 무시 + 정보 출처 편향",
+    "weakness_detailed": "N6에서 RSI 77.93(과매수), 볼린저 상단 돌파 신호가 있었으나 유튜브 정보만 믿고 매수했습니다. 기술 지표 해석 능력과 정보 출처 다각화가 필요합니다.",
+    "learning_path_summary": "기술 지표 기초 → 정보 출처 검증 → 종합 판단",
+    "learning_path_detailed": {
+      "step1": "RSI, 볼린저밴드 등 기본 기술 지표 해석법 학습",
+      "step2": "N6 실제 사례 분석: 과매수 구간에서 매수한 이유 복기",
+      "step3": "정보 출처 다각화: 유튜브 + 기술 지표 + 뉴스 종합 판단"
+    },
+    "recommended_topics": ["기술적 분석 기초", "RSI 지표 활용법", "정보 출처 검증"],
+    "estimated_difficulty": "보통",
+    "uncertainty_level": "low"
+  }
+}
+
 규칙:
 1. weakness_summary는 돋보기를 누르기 전 기본적으로 보이는 내용입니다
 2. weakness_detailed와 learning_path_detailed는 돋보기를 눌렀을 때 보입니다
-3. 학습 경로는 구체적이고 실행 가능해야 합니다
-4. 너무 많은 내용을 한 번에 제시하지 말고, 우선순위가 높은 것부터 제시합니다
-5. JSON 형식으로만 출력하며, 다른 텍스트는 포함하지 않습니다
+3. N6 기술 지표 데이터가 있으면 반드시 참조하여 기술 지표 무시 여부를 분석합니다
+4. 학습 경로는 구체적이고 실행 가능해야 합니다
+5. 너무 많은 내용을 한 번에 제시하지 말고, 우선순위가 높은 것부터 제시합니다
+6. JSON 형식으로만 출력하며, 다른 텍스트는 포함하지 않습니다
 """
