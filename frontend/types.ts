@@ -6,16 +6,110 @@ export interface InvestmentFormData {
   decisionBasis: string[];
 }
 
-export interface AnalysisResult {
-  reason: string;
-  technicalAnalysis: string;
-  learningPath: {
-    title: string;
-    description: string;
-    actionItems: string[];
+export interface N3LossDiagnosis {
+  n6_tech_indicator_guideline: GuidelineBlock;
+  n7_news_market_guideline: GuidelineBlock;
+  n8_loss_cause_guideline: GuidelineBlock & {
+    loss_cause_count: number;
+    loss_cause_types: string[];
   };
-  behavioralGuide: string;
-  suggestedQuestions: string[];
+  n9_mistake_pattern_guideline: GuidelineBlock;
+  global_constraints: string[];
+  uncertainty_level: string;
+}
+
+export interface GuidelineBlock {
+  objective: string;
+  required_inputs: string[];
+  analysis_steps: string[];
+  output_requirements: string[];
+}
+
+export interface N6StockAnalysis {
+  stock_analysis: {
+    ticker: string;
+    period: {
+      buy_date: string;
+      sell_date: string;
+    };
+    summary: string;
+    price_move: {
+      start_price: string;
+      end_price: string;
+      pct_change: string;
+      highest?: string;
+      lowest?: string;
+    };
+    trend: string;
+    indicators: {
+      name: string;
+      value: string;
+      interpretation: string;
+    }[];
+    risk_notes: string[];
+    uncertainty_level: string;
+  };
+}
+
+export interface N7NewsSummary {
+  news_summary: {
+    query: string;
+    key_events: {
+      headline: string;
+      source: string;
+      date: string;
+      summary: string;
+    }[];
+    sentiment: string;
+    impact_assessment: string;
+    uncertainty_level: string;
+  };
+}
+
+export interface N8ConceptExplanation {
+  mode: string;
+  term_explanation?: {
+    term: string;
+    short_summary: string;
+    detailed_explanation: string;
+    simple_example: string;
+    usage_context?: string;
+    related_terms: string[];
+    uncertainty_level: string;
+  } | null;
+  learning_guide?: {
+    weakness_summary: string;
+    weakness_detailed: string;
+    learning_path_summary: string;
+    learning_path_detailed: {
+      step1: string;
+      step2: string;
+      step3: string;
+    };
+    recommended_topics: string[];
+    estimated_difficulty: string;
+    uncertainty_level: string;
+  } | null;
+  error_message?: string;
+  uncertainty_level?: string;
+}
+
+export interface N9FallbackResponse {
+  message: string;
+  intent_hint: string;
+}
+
+export interface AnalysisResult {
+  request_id: string;
+  n3_loss_diagnosis?: N3LossDiagnosis;
+  n6_stock_analysis?: N6StockAnalysis;
+  n7_news_summary?: N7NewsSummary;
+  n8_concept_explanation?: N8ConceptExplanation;
+  fallback_response?: N9FallbackResponse;
+  n6_error?: string;
+  n7_error?: string;
+  n8_error?: string;
+  n9_error?: string;
 }
 
 export interface Message {
