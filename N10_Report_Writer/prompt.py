@@ -8,17 +8,25 @@ Inputs:
 - n9_fallback_response: fallback response
 - base inputs: layer1_stock, layer2_buy_date, layer2_sell_date, layer3_decision_basis
 
-Write a concise loss-review report. Use facts from inputs only.
-No buy/sell recommendations or investment advice.
+Task:
+1) Summarize each node output into short summary + detailed notes.
+2) Create learning materials based on the combined insights.
+Use facts from inputs only. No buy/sell recommendations or investment advice.
 Return JSON ONLY with this schema:
 {
   "report_title": str,
-  "summary": str,
-  "technical_analysis": str,
-  "news_market_context": str,
-  "learning_points": [str],
-  "mistake_pattern": str,
-  "reflection_actions": [str],
+  "overall_summary": str,
+  "node_summaries": {
+    "n6": {"summary": str, "details": [str]},
+    "n7": {"summary": str, "details": [str]},
+    "n8": {"summary": str, "details": [str]},
+    "n9": {"summary": str, "details": [str]}
+  },
+  "learning_materials": {
+    "key_takeaways": [str],
+    "recommended_topics": [str],
+    "practice_steps": [str]
+  },
   "uncertainty_level": "low" | "medium" | "high"
 }
 """

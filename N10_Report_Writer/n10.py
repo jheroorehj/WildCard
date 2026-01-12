@@ -45,12 +45,9 @@ def node10_loss_review_report(state: Dict[str, Any]) -> Dict[str, Any]:
 def _normalize(data: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "report_title": str(data.get("report_title", "손실 복기 리포트")),
-        "summary": str(data.get("summary", "요약을 생성하지 못했습니다.")),
-        "technical_analysis": str(data.get("technical_analysis", "")),
-        "news_market_context": str(data.get("news_market_context", "")),
-        "learning_points": _coerce_list(data.get("learning_points")),
-        "mistake_pattern": str(data.get("mistake_pattern", "")),
-        "reflection_actions": _coerce_list(data.get("reflection_actions")),
+        "overall_summary": str(data.get("overall_summary", "요약을 생성하지 못했습니다.")),
+        "node_summaries": _normalize_node_summaries(data.get("node_summaries")),
+        "learning_materials": _normalize_learning_materials(data.get("learning_materials")),
         "uncertainty_level": data.get("uncertainty_level", "high"),
     }
 
@@ -63,14 +60,41 @@ def _coerce_list(value: Any) -> List[str]:
     return []
 
 
+def _normalize_node_summaries(value: Any) -> Dict[str, Dict[str, Any]]:
+    if not isinstance(value, dict):
+        value = {}
+    return {
+        "n6": _normalize_node_block(value.get("n6")),
+        "n7": _normalize_node_block(value.get("n7")),
+        "n8": _normalize_node_block(value.get("n8")),
+        "n9": _normalize_node_block(value.get("n9")),
+    }
+
+
+def _normalize_node_block(value: Any) -> Dict[str, Any]:
+    if not isinstance(value, dict):
+        value = {}
+    return {
+        "summary": str(value.get("summary", "")),
+        "details": _coerce_list(value.get("details")),
+    }
+
+
+def _normalize_learning_materials(value: Any) -> Dict[str, Any]:
+    if not isinstance(value, dict):
+        value = {}
+    return {
+        "key_takeaways": _coerce_list(value.get("key_takeaways")),
+        "recommended_topics": _coerce_list(value.get("recommended_topics")),
+        "practice_steps": _coerce_list(value.get("practice_steps")),
+    }
+
+
 def _fallback(reason: str) -> Dict[str, Any]:
     return {
         "report_title": "손실 복기 리포트",
-        "summary": f"리포트를 생성하지 못했습니다. ({reason})",
-        "technical_analysis": "",
-        "news_market_context": "",
-        "learning_points": [],
-        "mistake_pattern": "",
-        "reflection_actions": [],
+        "overall_summary": f"리포트를 생성하지 못했습니다. ({reason})",
+        "node_summaries": _normalize_node_summaries({}),
+        "learning_materials": _normalize_learning_materials({}),
         "uncertainty_level": "high",
     }
