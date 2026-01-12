@@ -2,20 +2,22 @@
 from typing import Any, Dict, List
 import json
 
-<<<<<<< HEAD
-from core.llm import get_solar_chat, get_upstage_embeddings
-=======
 from langchain_core.messages import HumanMessage, SystemMessage
-
-from core.llm import get_solar_chat
->>>>>>> 1dca3f8b4ce9223b3067903c182ddf2083c743b7
+from core.llm import get_solar_chat, get_upstage_embeddings
 from .prompt import NODE7_SYSTEM_PROMPT
 from utils.json_parser import parse_json
 from utils.safety import contains_advice
 from utils.validator import validate_node7
-from repository.rdb_repo import RDBRepository
-from repository.vector.vector_repo import ChromaDBRepository
 from .search_tool import search_news_with_serper
+
+# Repository imports - optional (will be used when available)
+try:
+    from repository.rdb_repo import RDBRepository
+    from repository.vector.vector_repo import ChromaDBRepository
+    HAS_REPOSITORY = True
+except ImportError:
+    HAS_REPOSITORY = False
+    print("[WARNING] Repository modules not found. Database features will be disabled.")
 
 
 def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -47,30 +49,31 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
 
     news_results = search_news_with_serper(search_query, date_range=buy_date)
 
-    # 수정할 부분 (교체용)
-    try:
-        v_repo = ChromaDBRepository(collection_name="news_context")
-        docs = [f"[{n['source']}] {n['title']}: {n['snippet']}" for n in news_results]
-        metadatas = [{"url": n["link"], "date": n["date"]} for n in news_results]
+    # ChromaDB 저장 (선택적)
+    if HAS_REPOSITORY:
+        try:
+            v_repo = ChromaDBRepository(collection_name="news_context")
+            docs = [f"[{n['source']}] {n['title']}: {n['snippet']}" for n in news_results]
+            metadatas = [{"url": n["link"], "date": n["date"]} for n in news_results]
 
-        # 디버깅 출력 추가
-        print(f"[DEBUG] Docs to embed: {len(docs)}")
+            print(f"[DEBUG] Docs to embed: {len(docs)}")
 
-        # Upstage Embedding 적용
-        embedding_model = get_upstage_embeddings()
-        embeddings = embedding_model.embed_documents(docs)
+            # Upstage Embedding 적용
+            embedding_model = get_upstage_embeddings()
+            embeddings = embedding_model.embed_documents(docs)
 
-        # 디버깅 출력 추가
-        print(f"[DEBUG] Generated embeddings: {len(embeddings)}")
+            print(f"[DEBUG] Generated embeddings: {len(embeddings)}")
 
-        v_repo.add_documents(
-            documents=docs,
-            embeddings=embeddings,
-            metadatas=metadatas,
-        )
-        print(f"[*] Saved {len(docs)} news items to ChromaDB.")
-    except Exception as e:
-        print(f"[WARNING] Failed to save news to VectorDB: {e}")
+            v_repo.add_documents(
+                documents=docs,
+                embeddings=embeddings,
+                metadatas=metadatas,
+            )
+            print(f"[*] Saved {len(docs)} news items to ChromaDB.")
+        except Exception as e:
+            print(f"[WARNING] Failed to save news to VectorDB: {e}")
+    else:
+        print("[INFO] Skipping ChromaDB storage (repository module not available)")
 
 
     llm = get_solar_chat()
@@ -130,13 +133,17 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
         "uncertainty_level": "low",
     }
 
-    try:
-        case_id = state.get("case_id")
-        if case_id:
-            r_repo = RDBRepository()
-            r_repo.save_market_context(case_id, output_data)
-            print(f"[*] N7 results saved to Supabase for case: {case_id}")
-    except Exception as e:
-        print(f"[WARNING] Failed to save N7 results to Supabase: {e}")
+    # Supabase 저장 (선택적)
+    if HAS_REPOSITORY:
+        try:
+            case_id = state.get("case_id")
+            if case_id:
+                r_repo = RDBRepository()
+                r_repo.save_market_context(case_id, output_data)
+                print(f"[*] N7 results saved to Supabase for case: {case_id}")
+        except Exception as e:
+            print(f"[WARNING] Failed to save N7 results to Supabase: {e}")
+    else:
+        print("[INFO] Skipping Supabase storage (repository module not available)")
 
     return {"n7_news_analysis": {"news_context": output_data}}
