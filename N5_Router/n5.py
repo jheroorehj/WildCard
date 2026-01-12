@@ -128,18 +128,39 @@ def node5_parallel_router(state: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     n3_guideline = state.get("n3_loss_diagnosis", {})
+
+    # N3 가이드라인에서 각 노드별 가이드라인 추출 (N3 프롬프트의 실제 키 이름 사용)
+    n6_guideline = n3_guideline.get("n6_tech_indicator_guideline", {})
+    n7_guideline = n3_guideline.get("n7_news_market_guideline", {})  # 수정
+    n8_guideline = n3_guideline.get("n8_loss_cause_guideline", {})   # 수정
+    n9_guideline = n3_guideline.get("n9_mistake_pattern_guideline", {})  # 수정
+
+    print(f"[N5] N3 guidelines extracted:")
+    print(f"  - N6: {bool(n6_guideline)}")
+    print(f"  - N7: {bool(n7_guideline)}")
+    print(f"  - N8: {bool(n8_guideline)}")
+    print(f"  - N9: {bool(n9_guideline)}")
+
     fallback_payloads = {
-        "N6": dict(base_payload),
+        "N6": {
+            **base_payload,
+            "n3_guideline": n6_guideline,  # N6에 기술 지표 가이드라인 전달
+        },
         "N7": {
             **base_payload,
-            "n3_loss_analysis": n3_guideline,
+            "n3_loss_analysis": n3_guideline,  # N7에는 전체 진단 전달 (기존 유지)
+            "n3_guideline": n7_guideline,      # 추가: 뉴스 컨텍스트 가이드라인
         },
-        "N8": _build_n8_fallback({**base_payload, **state}),
+        "N8": {
+            **_build_n8_fallback({**base_payload, **state}),
+            "n3_guideline": n8_guideline,  # N8에 학습 가이드라인 전달
+        },
         "N9": {
             "user_message": state.get("user_message")
             or state.get("layer3_decision_basis")
             or "사용자 메시지가 제공되지 않았습니다.",
             "context": state.get("context", ""),
+            "n3_guideline": n9_guideline,  # N9에 폴백 가이드라인 전달
         },
     }
 
