@@ -101,15 +101,22 @@ export interface N9FallbackResponse {
 
 export interface AnalysisResult {
   request_id: string;
-  n3_loss_diagnosis?: N3LossDiagnosis;
-  n6_stock_analysis?: N6StockAnalysis;
-  n7_news_summary?: N7NewsSummary;
-  n8_concept_explanation?: N8ConceptExplanation;
-  fallback_response?: N9FallbackResponse;
-  n6_error?: string;
-  n7_error?: string;
-  n8_error?: string;
-  n9_error?: string;
+  n10_loss_review_report?: {
+    report_title: string;
+    overall_summary: string;
+    node_summaries: {
+      n6: { summary: string; details: string[] };
+      n7: { summary: string; details: string[] };
+      n8: { summary: string; details: string[] };
+      n9: { summary: string; details: string[] };
+    };
+    learning_materials: {
+      key_takeaways: string[];
+      recommended_topics: string[];
+      practice_steps: string[];
+    };
+    uncertainty_level: string;
+  };
 }
 
 export interface Message {

@@ -97,19 +97,12 @@ const App: React.FC = () => {
     }
   };
 
-  const n3Guide = analysis?.n3_loss_diagnosis;
-  const n6Analysis = analysis?.n6_stock_analysis?.stock_analysis;
-  const n7Summary = analysis?.n7_news_summary?.news_summary;
-  const n8Explanation = analysis?.n8_concept_explanation;
-  const n9Message = analysis?.fallback_response?.message;
-  const learningGuide = n8Explanation?.learning_guide || null;
-  const termExplanation = n8Explanation?.term_explanation || null;
-
-  const suggestedQuestions = analysis
+  const report = analysis?.n10_loss_review_report;
+  const suggestedQuestions = report
     ? [
         "기술적 지표 요약을 더 자세히 알려줘",
         "뉴스 이벤트를 좀 더 설명해줘",
-        "용어 설명을 더 쉽게 말해줘",
+        "학습 경로를 더 구체적으로 알려줘",
       ]
     : [];
 
@@ -331,99 +324,84 @@ const App: React.FC = () => {
       >
         {analysis && (
           <div className="space-y-4">
-            {/* Loss Cause Analysis Card */}
             <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4">
               <div className="flex items-center gap-2 mb-3">
-                <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-tight">손실 원인 분석</h4>
+                <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-tight">손실 복기 요약</h4>
               </div>
-              {n6Analysis ? (
+              {report ? (
                 <>
-                  <p className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">{n6Analysis.summary}</p>
-                  <div className="mt-3 space-y-2">
-                    {n6Analysis.indicators.map((indicator, idx) => (
-                      <div key={idx} className="text-xs text-slate-300">
-                        <span className="text-slate-500">{indicator.name}</span>
-                        <span className="mx-2 text-slate-600">·</span>
-                        <span>{indicator.value}</span>
-                        <span className="mx-2 text-slate-600">·</span>
-                        <span className="text-slate-400">{indicator.interpretation}</span>
-                      </div>
-                    ))}
-                  </div>
+                  <p className="text-slate-200 leading-relaxed text-sm whitespace-pre-wrap">{report.report_title}</p>
+                  <p className="mt-2 text-slate-300 leading-relaxed text-xs whitespace-pre-wrap opacity-90">{report.overall_summary}</p>
                 </>
               ) : (
-                <p className="text-slate-500 text-sm">분석 결과가 없습니다.</p>
+                <p className="text-slate-500 text-sm">No summary available.</p>
               )}
             </section>
 
-            {/* Market Context Analysis Card */}
             <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-75">
               <div className="flex items-center gap-2 mb-3">
                 <div className="text-purple-400 scale-75">{ICONS.Search}</div>
-                <h4 className="text-purple-400 text-[10px] font-black uppercase tracking-tight">시장 상황 분석</h4>
+                <h4 className="text-purple-400 text-[10px] font-black uppercase tracking-tight">시장 상황</h4>
               </div>
-              {n7Summary ? (
-                <div className="space-y-2 text-xs">
-                  <p className="text-slate-300 leading-relaxed whitespace-pre-wrap opacity-90">{n7Summary.impact_assessment}</p>
+              {report ? (
+                <div className="space-y-2 text-xs text-slate-300">
+                  <p className="leading-relaxed whitespace-pre-wrap opacity-90">{report.node_summaries.n7.summary}</p>
                   <div className="space-y-1 text-slate-400">
-                    {n7Summary.key_events.map((event, idx) => (
-                      <div key={idx} className="leading-relaxed">
-                        <span className="text-slate-500">{event.date}</span>
-                        <span className="mx-2 text-slate-600">-</span>
-                        <span className="text-slate-200">{event.headline}</span>
-                        <span className="mx-2 text-slate-600">-</span>
-                        <span>{event.summary}</span>
+                    {report.node_summaries.n7.details.map((detail, idx) => (
+                      <div key={idx}>- {detail}</div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-slate-500 text-xs">No market summary.</p>
+              )}
+            </section>
+
+            <section className="bg-slate-900/40 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-75">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="text-blue-400 scale-75">{ICONS.Lightbulb}</div>
+                <h4 className="text-blue-400 text-[10px] font-black uppercase tracking-tight">기술적 요약</h4>
+              </div>
+              {report ? (
+                <div className="space-y-2 text-xs text-slate-300">
+                  <p className="leading-relaxed whitespace-pre-wrap opacity-90">{report.node_summaries.n6.summary}</p>
+                  <div className="space-y-1 text-slate-400">
+                    {report.node_summaries.n6.details.map((detail, idx) => (
+                      <div key={idx}>- {detail}</div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-slate-500 text-xs">No technical summary.</p>
+              )}
+            </section>
+
+            <section className="bg-slate-900/60 border border-blue-500/10 p-5 rounded-3xl shadow-xl animate-in fade-in slide-in-from-bottom-4 delay-150">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="text-white scale-75">{ICONS.Lightbulb}</div>
+                <h4 className="text-white text-[10px] font-black uppercase tracking-tight">학습 경로</h4>
+              </div>
+              {report ? (
+                <div className="space-y-3">
+                  <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+                    {report.learning_materials.key_takeaways.join(' ? ') || 'No takeaways'}
+                  </p>
+                  <div className="space-y-2 pt-1">
+                    {report.learning_materials.practice_steps.map((item, idx) => (
+                      <div key={idx} className="flex items-start gap-2.5 group">
+                        <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform"></div>
+                        <p className="text-[12px] text-slate-200 font-medium leading-tight">{item}</p>
                       </div>
                     ))}
                   </div>
                 </div>
               ) : (
-                <p className="text-slate-500 text-xs">시장 요약이 없습니다.</p>
+                <p className="text-[11px] text-slate-500 font-medium leading-relaxed">No learning guide.</p>
               )}
             </section>
 
-            {/* Personalized Learning Path Card */}
-            <section className="bg-slate-900/60 border border-blue-500/10 p-5 rounded-3xl shadow-xl animate-in fade-in slide-in-from-bottom-4 delay-150">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="text-white scale-75">{ICONS.Lightbulb}</div>
-                <h4 className="text-white text-[10px] font-black uppercase tracking-tight">맞춤형 투자 학습 경로</h4>
-              </div>
-              <div className="space-y-3">
-                {learningGuide ? (
-                  <>
-                    <h5 className="text-base font-bold text-white tracking-tight">{learningGuide.learning_path_summary}</h5>
-                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed">{learningGuide.weakness_summary}</p>
-                    <div className="space-y-2 pt-1">
-                      {[learningGuide.learning_path_detailed.step1, learningGuide.learning_path_detailed.step2, learningGuide.learning_path_detailed.step3].map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-2.5 group">
-                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform"></div>
-                          <p className="text-[12px] text-slate-200 font-medium leading-tight">{item}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : termExplanation ? (
-                  <>
-                    <h5 className="text-base font-bold text-white tracking-tight">{termExplanation.term}</h5>
-                    <p className="text-[11px] text-slate-400 font-medium leading-relaxed">{termExplanation.short_summary}</p>
-                    <div className="space-y-2 pt-1">
-                      {[termExplanation.detailed_explanation, termExplanation.simple_example, termExplanation.related_terms.join(", ")].map((item, idx) => (
-                        <div key={idx} className="flex items-start gap-2.5 group">
-                          <div className="w-1 h-1 rounded-full bg-blue-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform"></div>
-                          <p className="text-[12px] text-slate-200 font-medium leading-tight">{item}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                ) : (
-                  <p className="text-[11px] text-slate-500 font-medium leading-relaxed">학습 가이드가 없습니다.</p>
-                )}
-              </div>
-            </section>
-
-            {/* Behavioral Guide */}
             <div className="px-3 py-3 border-l-2 border-emerald-500/50 bg-emerald-500/5 rounded-r-xl">
-               <p className="text-emerald-400/90 text-[11px] italic font-medium">"{n3Guide?.n9_mistake_pattern_guideline?.objective || n9Message || "추가 안내가 없습니다."}"</p>
+               <p className="text-emerald-400/90 text-[11px] italic font-medium">"{report?.node_summaries.n9.summary || 'No additional guidance.'}"</p>
             </div>
           </div>
         )}

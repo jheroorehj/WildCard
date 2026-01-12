@@ -10,10 +10,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from N3_Loss_Analyzer.n3 import node3_loss_analyzer
-from N6_Stock_Analyst.n6 import node6_stock_analyst
-from N7_News_Summarizer.n7 import node7_news_summarizer
-from N8_Concept_Explainer.n8 import node8_concept_explainer
+from N5_Router.n5 import node5_parallel_router
 from N9_Fallback_Handler.n9 import node9_fallback_handler
+from N10_Report_Writer.n10 import node10_loss_review_report
 from app.service.embedding_service import EmbeddingService
 from core.db import get_chroma_collection, get_supabase_client
 
@@ -74,7 +73,7 @@ def _save_to_supabase(request_id: str, state: Dict[str, Any], results: Dict[str,
         db.table("analysis_requests").insert(request_payload).execute()
 
         result_rows = []
-        for node_key in ("n3", "n6", "n7", "n8", "n9"):
+        for node_key in ("n3", "n5", "n10"):
             node_result = results.get(node_key)
             if node_result is None:
                 continue
@@ -96,7 +95,7 @@ def _save_to_chroma(request_id: str, state: Dict[str, Any], results: Dict[str, A
         llm_docs = []
         llm_ids = []
         llm_meta = []
-        for node_key in ("n3", "n6", "n7", "n8", "n9"):
+        for node_key in ("n3", "n5", "n10"):
             node_result = results.get(node_key)
             if node_result is None:
                 continue
@@ -137,9 +136,7 @@ def health() -> Dict[str, str]:
     return {"status": "ok"}
 
 
-async def _run_node(
-    name: str, fn: Any, state: Dict[str, Any]
-) -> Dict[str, Any]:
+async def _run_node(name: str, fn: Any, state: Dict[str, Any]) -> Dict[str, Any]:
     try:
         return await asyncio.to_thread(fn, dict(state))
     except Exception as exc:
@@ -158,25 +155,19 @@ async def analyze(req: AnalyzeRequest) -> Dict[str, Any]:
     n3_result = node3_loss_analyzer(state)
     state.update(n3_result)
 
-    nodes: List[Tuple[str, Any]] = [
-        ("n6", node6_stock_analyst),
-        ("n7", node7_news_summarizer),
-        ("n8", node8_concept_explainer),
-        ("n9", node9_fallback_handler),
-    ]
+    n5_result = await _run_node("n5", node5_parallel_router, state)
+    state.update(n5_result)
 
-    results = await asyncio.gather(
-        *[_run_node(name, fn, state) for name, fn in nodes]
-    )
+    n10_result = await _run_node("n10", node10_loss_review_report, state)
 
     request_id = str(uuid4())
-    merged: Dict[str, Any] = {"request_id": request_id, **n3_result}
-    for result in results:
-        merged.update(result)
+    merged: Dict[str, Any] = {"request_id": request_id, **n10_result}
 
-    node_results: Dict[str, Any] = {"n3": n3_result}
-    for (name, _), result in zip(nodes, results):
-        node_results[name] = result
+    node_results: Dict[str, Any] = {
+        "n3": n3_result,
+        "n5": n5_result,
+        "n10": n10_result,
+    }
 
     await asyncio.to_thread(_save_to_supabase, request_id, state, node_results)
     await asyncio.to_thread(_save_to_chroma, request_id, state, node_results)
