@@ -23,3 +23,6 @@ class MainState(TypedDict, total=False):
 
     # Node9 출력
     n9_fallback_response: Dict[str, object]
+
+    # Node10 출력
+    n10_loss_review_report: Dict[str, object]
