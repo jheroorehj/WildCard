@@ -1,0 +1,38 @@
+{
+  "일반 대화": {
+    "input": {
+      "user_message": "안녕하세요! 오늘 날씨 좋네요.",
+      "context": "사용자가 인사를 하고 있음"
+    },
+    "output": {
+      "fallback_response": {
+        "message": "안녕하세요! 날씨가 화창해서 기분도 좋아지는 날이네요. 오늘 어떤 계획을 가지고 계신가요?",
+        "intent_hint": "general_chat"
+      }
+    }
+  },
+  "투자 질문": {
+    "input": {
+      "user_message": "주식 투자를 시작하려면 어떻게 해야 하나요?",
+      "context": "투자 초보자가 일반적인 질문을 하고 있음"
+    },
+    "output": {
+      "fallback_response": {
+        "message": "주식 투자를 시작하시려면 기본 금융 용어나 시장 원리를 먼저 익히시는 게 좋습니다. 구체적인 용어나 개념에 대해 궁금한 점이 있으면 설명해 드릴 수 있어요!",
+        "intent_hint": "investing_help"
+      }
+    }
+  },
+  "컨텍스트 활용": {
+    "input": {
+      "user_message": "더 알려주세요",
+      "context": "이전에 손실 분석에 대해 대화했음. 사용자가 추가 정보를 요청하고 있음."
+    },
+    "output": {
+      "fallback_response": {
+        "message": "손실 분석을 위해 고려할 수 있는 요소로는 시장 상황, 투자 심리, 리스크 관리 방법 등이 있습니다. 구체적인 부분에 대해 더 설명해 드릴까요?",
+        "intent_hint": "investing_help"
+      }
+    }
+  }
+}
