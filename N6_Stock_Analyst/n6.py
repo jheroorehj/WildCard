@@ -1,7 +1,78 @@
 from typing import Any, Dict, Optional, List
+import re
 
 import yfinance as yf
 
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from core.llm import get_solar_chat
+
+
+_TICKER_TOKEN_RE = re.compile(r"[A-Za-z0-9.\-]+")
+
+
+def resolve_ticker(stock_name: str) -> str:
+    """
+    종목명을 티커로 변환합니다.
+    - 이미 티커처럼 보이면 그대로 사용
+    - 숫자 6자리면 KRX 기본(.KS)으로 가정
+    - 그렇지 않으면 LLM으로 티커 추정
+    """
+    raw = (stock_name or "").strip()
+    if not raw:
+        return raw
+
+    if re.fullmatch(r"\d{6}", raw):
+        return f"{raw}.KS"
+
+    if re.fullmatch(r"[A-Za-z0-9.\-]+", raw):
+        return raw.upper()
+
+    try:
+        llm = get_solar_chat()
+        messages = [
+            SystemMessage(
+                content=(
+                    "You convert company names to tickers. "
+                    "Return a single ticker token only (e.g., AAPL, TSLA, 005930.KS)."
+                )
+            ),
+            HumanMessage(content=f"Company name: {raw}"),
+        ]
+        response = llm.invoke(messages)
+        text = response.content if isinstance(response.content, str) else str(response.content)
+        match = _TICKER_TOKEN_RE.search(text)
+        return match.group(0).upper() if match else raw
+    except Exception:
+        return raw
+
+
+def generate_llm_chart_analysis(payload: Dict[str, Any]) -> Optional[str]:
+    """
+    기술적 분석 결과를 LLM에 전달해 요약/해석을 생성합니다.
+    """
+    try:
+        llm = get_solar_chat()
+        messages = [
+            SystemMessage(
+                content=(
+                    "You are a technical analysis summarizer. "
+                    "Summarize chart/indicator context factually without investment advice."
+                )
+            ),
+            HumanMessage(
+                content=(
+                    "Given the structured technical data, write a brief analysis in Korean. "
+                    "No buy/sell recommendations.\n"
+                    f"{payload}"
+                )
+            ),
+        ]
+        response = llm.invoke(messages)
+        text = response.content if isinstance(response.content, str) else str(response.content)
+        return text.strip()
+    except Exception:
+        return None
 
 
 def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -9,8 +80,8 @@ def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
     Node6: 주식 기술적 분석
     - 종목명, 매수/매도 날짜를 받아서 실제 주가 데이터를 가져옴
     - 기술적 지표(볼린저밴드, RSI, MACD 등)를 계산
-    - 구조화된 분석 결과를 반환 (LLM 호출 없음)
-    - 반환된 데이터는 N10(요약 노드)에서 LLM이 읽고 요약함
+    - 구조화된 분석 결과를 반환
+    - LLM을 통해 차트 해석 요약을 추가
     """
     stock_name = state.get("layer1_stock")
     buy_date = state.get("layer2_buy_date")
@@ -22,13 +93,31 @@ def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
         return {"n6_stock_analysis": fallback_result("필수 입력값이 누락되었습니다.")}
 
     try:
+        ticker = resolve_ticker(stock_name)
         # 주가 데이터 가져오기
-        stock_data = fetch_stock_data(stock_name, buy_date, sell_date)
+        stock_data = fetch_stock_data(ticker, buy_date, sell_date)
         if not stock_data:
             return {"n6_stock_analysis": fallback_result("주가 데이터를 가져올 수 없습니다.")}
 
         # 기술적 분석 수행
         analysis_result = perform_technical_analysis(stock_data, buy_date, sell_date)
+        analysis_result["stock_analysis"]["ticker"] = ticker
+        analysis_result["stock_analysis"]["resolved_from"] = stock_name
+
+        llm_analysis = generate_llm_chart_analysis(
+            {
+                "ticker": ticker,
+                "period": analysis_result["stock_analysis"].get("period"),
+                "summary": analysis_result["stock_analysis"].get("summary"),
+                "price_move": analysis_result["stock_analysis"].get("price_move"),
+                "trend": analysis_result["stock_analysis"].get("trend"),
+                "indicators": analysis_result["stock_analysis"].get("indicators"),
+                "volume_analysis": analysis_result["stock_analysis"].get("volume_analysis"),
+                "risk_notes": analysis_result["stock_analysis"].get("risk_notes"),
+            }
+        )
+        if llm_analysis:
+            analysis_result["stock_analysis"]["llm_chart_analysis"] = llm_analysis
 
         # 결과 검증
         from utils.validator import validate_node6
