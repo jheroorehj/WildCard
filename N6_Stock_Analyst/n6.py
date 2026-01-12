@@ -135,18 +135,28 @@ def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
 def fetch_stock_data(stock_name: str, start_date: str, end_date: str) -> Optional[Dict[str, Any]]:
     """
     yfinance를 사용하여 실제 주가 데이터를 가져오는 함수
+    볼린저밴드 계산을 위해 매수/매도일 기준 ±1개월 데이터를 수집합니다.
 
     Args:
         stock_name: 종목명 또는 티커 (예: AAPL, TSLA, 005930.KS)
-        start_date: 시작일 (YYYY-MM-DD)
-        end_date: 종료일 (YYYY-MM-DD)
+        start_date: 시작일 (YYYY-MM-DD) - 매수일
+        end_date: 종료일 (YYYY-MM-DD) - 매도일
 
     Returns:
         주가 데이터 딕셔너리 또는 None
     """
     try:
+        from datetime import datetime, timedelta
+
+        # 볼린저밴드 계산을 위해 기간 확장 (±1개월)
+        start_dt = datetime.strptime(start_date, "%Y-%m-%d")
+        end_dt = datetime.strptime(end_date, "%Y-%m-%d")
+
+        extended_start = (start_dt - timedelta(days=30)).strftime("%Y-%m-%d")
+        extended_end = (end_dt + timedelta(days=30)).strftime("%Y-%m-%d")
+
         ticker = yf.Ticker(stock_name)
-        hist = ticker.history(start=start_date, end=end_date)
+        hist = ticker.history(start=extended_start, end=extended_end)
 
         # 데이터가 비어있는지 확인
         if hist.empty:
@@ -155,8 +165,10 @@ def fetch_stock_data(stock_name: str, start_date: str, end_date: str) -> Optiona
         # 데이터프레임을 리스트로 변환
         return {
             "ticker": stock_name,
-            "start_date": start_date,
-            "end_date": end_date,
+            "start_date": start_date,  # 원래 매수일 유지
+            "end_date": end_date,  # 원래 매도일 유지
+            "extended_start": extended_start,  # 확장된 시작일
+            "extended_end": extended_end,  # 확장된 종료일
             "open": hist['Open'].tolist(),
             "high": hist['High'].tolist(),
             "low": hist['Low'].tolist(),
@@ -185,6 +197,7 @@ def perform_technical_analysis(stock_data: Dict[str, Any], buy_date: str, sell_d
     high_prices = stock_data.get("high", [])
     low_prices = stock_data.get("low", [])
     volumes = stock_data.get("volume", [])
+    dates = stock_data.get("dates", [])
 
     # 데이터가 없으면 기본값 반환
     if not close_prices:
@@ -212,12 +225,33 @@ def perform_technical_analysis(stock_data: Dict[str, Any], buy_date: str, sell_d
             }
         }
 
-    # 가격 분석
-    start_price = close_prices[0]
-    end_price = close_prices[-1]
+    # 실제 매수/매도일의 인덱스 찾기
+    try:
+        buy_idx = dates.index(buy_date)
+        sell_idx = dates.index(sell_date)
+    except ValueError:
+        # 정확한 날짜가 없으면 가장 가까운 날짜 찾기
+        buy_idx = 0
+        sell_idx = len(close_prices) - 1
+        for i, date in enumerate(dates):
+            if date >= buy_date:
+                buy_idx = i
+                break
+        for i in range(len(dates) - 1, -1, -1):
+            if dates[i] <= sell_date:
+                sell_idx = i
+                break
+
+    # 가격 분석 (실제 매수/매도일 기준)
+    start_price = close_prices[buy_idx]
+    end_price = close_prices[sell_idx]
     pct_change = ((end_price - start_price) / start_price) * 100
-    highest = max(high_prices)
-    lowest = min(low_prices)
+
+    # 매수/매도 기간의 최고/최저가
+    period_high_prices = high_prices[buy_idx:sell_idx+1]
+    period_low_prices = low_prices[buy_idx:sell_idx+1]
+    highest = max(period_high_prices) if period_high_prices else max(high_prices)
+    lowest = min(period_low_prices) if period_low_prices else min(low_prices)
 
     # 추세 판단 (간단한 로직)
     if pct_change > 5:
