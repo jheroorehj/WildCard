@@ -47,7 +47,7 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
 
     print(f"[*] N7 searching for: {search_query} around {buy_date}")
 
-    news_results = search_news_with_serper(search_query, date_range=buy_date)
+    news_results = search_news_with_serper(search_query, date_range=buy_date, num_results=3)
 
     # ChromaDB 저장 (선택적)
     if HAS_REPOSITORY:
@@ -77,7 +77,7 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
 
 
     llm = get_solar_chat()
-    news_text = "\n".join([f"- {n['title']} ({n['source']}, {n['date']})" for n in news_results])
+    news_text = "\n".join([f"- {n['title']} ({n['source']}, {n['date']})" for n in news_results[:3]])
 
     prompt = f"""
 당신은 전문 투자 뉴스 분석가입니다.
