@@ -11,3 +11,15 @@ class MainState(TypedDict, total=False):
 
     # Node3 출력
     n3_loss_diagnosis: Dict[str, object]
+
+    # Node6 출력
+    n6_stock_analysis: Dict[str, object]
+
+    # Node7 출력
+    n7_news_analysis: Dict[str, object]
+
+    # Node8 출력
+    n8_concept_explanation: Dict[str, object]
+
+    # Node9 출력
+    n9_fallback_response: Dict[str, object]
