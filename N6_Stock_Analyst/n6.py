@@ -1,7 +1,9 @@
 from typing import Any, Dict, Optional, List
 import re
+from datetime import datetime, timedelta, timezone
 
 import yfinance as yf
+from curl_cffi import requests as curl_requests
 
 from langchain_core.messages import HumanMessage, SystemMessage
 
@@ -134,7 +136,7 @@ def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def fetch_stock_data(stock_name: str, start_date: str, end_date: str) -> Optional[Dict[str, Any]]:
     """
-    yfinance를 사용하여 실제 주가 데이터를 가져오는 함수
+    Yahoo chart API를 curl_cffi로 호출하고, 실패 시 yfinance로 fallback
     볼린저밴드 계산을 위해 매수/매도일 기준 ±1개월 데이터를 수집합니다.
 
     Args:
@@ -146,8 +148,6 @@ def fetch_stock_data(stock_name: str, start_date: str, end_date: str) -> Optiona
         주가 데이터 딕셔너리 또는 None
     """
     try:
-        from datetime import datetime, timedelta
-
         # 볼린저밴드 계산을 위해 기간 확장 (±1개월)
         start_dt = datetime.strptime(start_date, "%Y-%m-%d")
         end_dt = datetime.strptime(end_date, "%Y-%m-%d")
@@ -155,29 +155,105 @@ def fetch_stock_data(stock_name: str, start_date: str, end_date: str) -> Optiona
         extended_start = (start_dt - timedelta(days=30)).strftime("%Y-%m-%d")
         extended_end = (end_dt + timedelta(days=30)).strftime("%Y-%m-%d")
 
+        chart = _fetch_yahoo_chart(stock_name, extended_start, extended_end)
+        if chart:
+            chart["start_date"] = start_date
+            chart["end_date"] = end_date
+            chart["extended_start"] = extended_start
+            chart["extended_end"] = extended_end
+            return chart
+
         ticker = yf.Ticker(stock_name)
         hist = ticker.history(start=extended_start, end=extended_end)
 
-        # 데이터가 비어있는지 확인
         if hist.empty:
             return None
 
-        # 데이터프레임을 리스트로 변환
         return {
             "ticker": stock_name,
             "start_date": start_date,  # 원래 매수일 유지
             "end_date": end_date,  # 원래 매도일 유지
             "extended_start": extended_start,  # 확장된 시작일
             "extended_end": extended_end,  # 확장된 종료일
-            "open": hist['Open'].tolist(),
-            "high": hist['High'].tolist(),
-            "low": hist['Low'].tolist(),
-            "close": hist['Close'].tolist(),
-            "volume": hist['Volume'].tolist(),
-            "dates": hist.index.strftime('%Y-%m-%d').tolist()
+            "open": hist["Open"].tolist(),
+            "high": hist["High"].tolist(),
+            "low": hist["Low"].tolist(),
+            "close": hist["Close"].tolist(),
+            "volume": hist["Volume"].tolist(),
+            "dates": hist.index.strftime("%Y-%m-%d").tolist(),
         }
     except Exception as e:
         print(f"주가 데이터 가져오기 실패: {e}")
+        return None
+
+
+def _fetch_yahoo_chart(stock_name: str, start_date: str, end_date: str) -> Optional[Dict[str, Any]]:
+    start_ts = _to_unix_date(start_date)
+    end_ts = _to_unix_date(end_date)
+    if start_ts is None or end_ts is None:
+        return None
+
+    end_ts += 24 * 60 * 60
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{stock_name}"
+    params = {
+        "period1": str(start_ts),
+        "period2": str(end_ts),
+        "interval": "1d",
+        "events": "history",
+        "includeAdjustedClose": "true",
+    }
+
+    try:
+        response = curl_requests.get(url, params=params, impersonate="chrome120", timeout=20)
+        if response.status_code != 200:
+            print(f"Yahoo chart API error: {response.status_code}")
+            return None
+
+        payload = response.json()
+        result = payload.get("chart", {}).get("result")
+        if not result:
+            return None
+
+        data = result[0]
+        timestamps = data.get("timestamp") or []
+        indicators = data.get("indicators", {}).get("quote", [])
+        if not timestamps or not indicators:
+            return None
+
+        quote = indicators[0]
+        opens = quote.get("open") or []
+        highs = quote.get("high") or []
+        lows = quote.get("low") or []
+        closes = quote.get("close") or []
+        volumes = quote.get("volume") or []
+
+        if not closes:
+            return None
+
+        dates = [
+            datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+            for ts in timestamps
+        ]
+
+        return {
+            "ticker": stock_name,
+            "open": opens,
+            "high": highs,
+            "low": lows,
+            "close": closes,
+            "volume": volumes,
+            "dates": dates,
+        }
+    except Exception as exc:
+        print(f"Yahoo chart fetch failed: {exc}")
+        return None
+
+
+def _to_unix_date(date_str: str) -> Optional[int]:
+    try:
+        dt = datetime.strptime(date_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+        return int(dt.timestamp())
+    except Exception:
         return None
 
 

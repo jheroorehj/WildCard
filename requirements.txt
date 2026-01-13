@@ -5,5 +5,6 @@ langchain-upstage==0.3.0
 python-dotenv==1.0.1
 yfinance==0.2.43
 requests==2.32.3
+curl_cffi==0.10.0
 chromadb==0.5.23
 supabase==2.27.1
