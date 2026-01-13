@@ -111,6 +111,15 @@ const App: React.FC = () => {
   const newsSummaries = analysis?.n7_news_analysis?.news_context?.news_summaries || [];
   const newsHeadlines = analysis?.n7_news_analysis?.news_context?.key_headlines || [];
   const newsItems = (newsSummaries.length ? newsSummaries : newsHeadlines).slice(0, 3);
+  const formatNewsDate = (value?: string) => {
+    if (!value) return '날짜 정보 없음';
+    const match = value.match(/(\d{4})[.\-](\d{1,2})[.\-](\d{1,2})/);
+    if (!match) return value;
+    const year = match[1];
+    const month = match[2].padStart(2, '0');
+    const day = match[3].padStart(2, '0');
+    return `${year}. ${month}. ${day}.`;
+  };
   const suggestedQuestions = report
     ? [
         "기술적 지표 요약을 더 자세히 알려줘",
@@ -414,18 +423,25 @@ const App: React.FC = () => {
                         {newsItems.length ? (
                           <div className="space-y-2">
                             {newsItems.map((item, idx) => (
-                              <div key={idx} className="rounded-xl border border-white/5 bg-slate-950/40 p-3">
-                                <div className="text-[12px] font-semibold text-slate-200">
-                                  {item.title || `News ${idx + 1}`}
-                                </div>
-                                <div className="text-[11px] text-slate-500 mt-0.5">
-                                  {item.source ? `${item.source} - ` : ''}{item.date || 'Date unavailable'}
-                                </div>
-                                {"summary" in item && item.summary ? (
-                                  <p className="text-[12px] text-slate-300 leading-relaxed mt-1 whitespace-pre-wrap">
-                                    {item.summary}
-                                  </p>
-                                ) : null}
+                              <div key={idx} className="relative rounded-xl border border-white/5 bg-slate-950/40">
+                                <a
+                                  href={item.link}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="mx-3 my-2 block rounded-lg border border-white/5 bg-slate-950/40 p-3 transition hover:border-emerald-400/40 hover:bg-slate-950/70"
+                                >
+                                  <div className="text-[12px] font-semibold text-slate-200">
+                                    {item.title || `News ${idx + 1}`}
+                                  </div>
+                                  <div className="text-[11px] text-slate-500 mt-0.5">
+                                    {formatNewsDate(item.date)}
+                                  </div>
+                                  {"summary" in item && item.summary ? (
+                                    <p className="text-[12px] text-slate-300 leading-relaxed mt-1 whitespace-pre-wrap">
+                                      {item.summary}
+                                    </p>
+                                  ) : null}
+                                </a>
                               </div>
                             ))}
                           </div>
@@ -501,31 +517,6 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-[14px] text-slate-500 font-medium leading-relaxed">학습 가이드가 없습니다.</p>
-              )}
-            </section>
-
-            <section className="bg-slate-900/50 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-150">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="text-emerald-300 scale-75">{ICONS.Search}</div>
-                <h4 className="text-emerald-300 text-[20px] font-black uppercase tracking-tight">News Links</h4>
-              </div>
-              {newsItems.length ? (
-                <div className="space-y-2">
-                  {newsItems.map((item, idx) => (
-                    <div key={idx} className="text-[13px] text-slate-300">
-                      <a
-                        href={item.link}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="hover:text-emerald-200 underline-offset-4 hover:underline"
-                      >
-                        {item.title || item.link}
-                      </a>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-[13px] text-slate-500">No news links available.</p>
               )}
             </section>
 
