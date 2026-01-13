@@ -8,6 +8,9 @@ class MainState(TypedDict, total=False):
     layer2_buy_date: str
     layer2_sell_date: str
     layer3_decision_basis: str
+    n6_input: Dict[str, object]
+    n7_input: Dict[str, object]
+    n1_input_error: Dict[str, object]
 
     # N6 출력
     n6_stock_analysis: Dict[str, object]
