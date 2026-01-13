@@ -162,6 +162,9 @@ async def analyze(req: AnalyzeRequest) -> Dict[str, Any]:
 
     request_id = str(uuid4())
     merged: Dict[str, Any] = {"request_id": request_id, **n10_result}
+    n7_news_analysis = state.get("n7_news_analysis")
+    if n7_news_analysis:
+        merged["n7_news_analysis"] = n7_news_analysis
 
     node_results: Dict[str, Any] = {
         "n3": n3_result,

@@ -108,6 +108,9 @@ const App: React.FC = () => {
   };
 
   const report = analysis?.n10_loss_review_report;
+  const newsSummaries = analysis?.n7_news_analysis?.news_context?.news_summaries || [];
+  const newsHeadlines = analysis?.n7_news_analysis?.news_context?.key_headlines || [];
+  const newsItems = (newsSummaries.length ? newsSummaries : newsHeadlines).slice(0, 3);
   const suggestedQuestions = report
     ? [
         "기술적 지표 요약을 더 자세히 알려줘",
@@ -401,11 +404,32 @@ const App: React.FC = () => {
                 {report ? (
                   <div className="space-y-2 text-xs text-slate-300">
                     <p className="leading-relaxed whitespace-pre-wrap opacity-90">{report.node_summaries.n7.summary}</p>
-                    {marketExpanded ? (
-                      <div className="space-y-1 text-slate-400">
-                        {report.node_summaries.n7.details.map((detail, idx) => (
-                          <div key={idx}>- {detail}</div>
-                        ))}
+                                        {marketExpanded ? (
+                      <div className="space-y-3 text-slate-400">
+                        <div className="space-y-1">
+                          {report.node_summaries.n7.details.map((detail, idx) => (
+                            <div key={idx}>- {detail}</div>
+                          ))}
+                        </div>
+                        {newsItems.length ? (
+                          <div className="space-y-2">
+                            {newsItems.map((item, idx) => (
+                              <div key={idx} className="rounded-xl border border-white/5 bg-slate-950/40 p-3">
+                                <div className="text-[12px] font-semibold text-slate-200">
+                                  {item.title || `News ${idx + 1}`}
+                                </div>
+                                <div className="text-[11px] text-slate-500 mt-0.5">
+                                  {item.source ? `${item.source} - ` : ''}{item.date || 'Date unavailable'}
+                                </div>
+                                {"summary" in item && item.summary ? (
+                                  <p className="text-[12px] text-slate-300 leading-relaxed mt-1 whitespace-pre-wrap">
+                                    {item.summary}
+                                  </p>
+                                ) : null}
+                              </div>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </div>
@@ -477,6 +501,31 @@ const App: React.FC = () => {
                 </div>
               ) : (
                 <p className="text-[14px] text-slate-500 font-medium leading-relaxed">학습 가이드가 없습니다.</p>
+              )}
+            </section>
+
+            <section className="bg-slate-900/50 border border-white/5 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-150">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="text-emerald-300 scale-75">{ICONS.Search}</div>
+                <h4 className="text-emerald-300 text-[20px] font-black uppercase tracking-tight">News Links</h4>
+              </div>
+              {newsItems.length ? (
+                <div className="space-y-2">
+                  {newsItems.map((item, idx) => (
+                    <div key={idx} className="text-[13px] text-slate-300">
+                      <a
+                        href={item.link}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="hover:text-emerald-200 underline-offset-4 hover:underline"
+                      >
+                        {item.title || item.link}
+                      </a>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[13px] text-slate-500">No news links available.</p>
               )}
             </section>
 

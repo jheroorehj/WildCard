@@ -48,6 +48,16 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
     print(f"[*] N7 searching for: {search_query} around {buy_date}")
 
     news_results = search_news_with_serper(search_query, date_range=buy_date, num_results=3)
+    news_items = [
+        {
+            "title": n.get("title", ""),
+            "source": n.get("source", ""),
+            "date": n.get("date", ""),
+            "snippet": n.get("snippet", ""),
+            "link": n.get("link", ""),
+        }
+        for n in news_results[:3]
+    ]
 
     # ChromaDB 저장 (선택적)
     if HAS_REPOSITORY:
@@ -77,38 +87,27 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
 
 
     llm = get_solar_chat()
-    news_text = "\n".join([f"- {n['title']} ({n['source']}, {n['date']})" for n in news_results[:3]])
+    news_payload = json.dumps(news_items, ensure_ascii=False)
 
     prompt = f"""
-당신은 전문 투자 뉴스 분석가입니다.
-사용자의 매수 판단 근거와 당시 실제 뉴스 데이터를 비교하여 '팩트 체크' 리포트를 작성하세요.
+You are a market news analyst. Compare the user's belief with current news and summarize the news items.
 
-[종목]: {ticker}
-[매수일]: {buy_date}
-[사용자의 믿음]: {user_reason}
+Inputs:
+- ticker: {ticker}
+- buy_date: {buy_date}
+- user_reason: {user_reason}
+- news_items: {news_payload}
 
-[당시 주요 뉴스]:
-{news_text}
+Output JSON only. Include:
+1) summary: short overall market/news summary.
+2) market_sentiment: index 0-100, label (fear|neutral|greed), description.
+3) fact_check: user_belief, actual_fact, verdict (mismatch|match|biased).
+4) news_summaries: list of 3 items with title, source, date, link, summary.
 
-[작성 규칙]:
-1. 시장의 공포/탐욕 지수(0~100)를 추정하여 포함하세요.
-2. 사용자가 놓친 핵심 사실(Fact Check)을 날카롭게 지적하세요.
-3. 투자 조언은 하지 말고, '사실의 괴리'에만 집중하세요.
-4. 반드시 아래 JSON 형식으로만 출력하세요.
-
-{{
-  "summary": "전체 시황 요약",
-  "market_sentiment": {{
-    "index": 45,
-    "label": "neutral",
-    "description": "당시 시장 분위기 설명"
-  }},
-  "fact_check": {{
-    "user_belief": "{user_reason}",
-    "actual_fact": "실제 뉴스 기반 사실",
-    "verdict": "정보 일치/불일치/편향 여부"
-  }}
-}}
+Rules:
+- Each news summary must be 2-3 sentences and slightly specific (not generic).
+- Keep a neutral tone. Do not give investment advice.
+- If a news item lacks details, say so briefly in the summary.
 """.strip()
 
     try:
@@ -123,12 +122,27 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
             "fact_check": {"user_belief": user_reason, "actual_fact": "분석 오류", "verdict": "unknown"},
         }
 
+    fallback_news_summaries = [
+        {
+            "title": n.get("title", ""),
+            "source": n.get("source", ""),
+            "date": n.get("date", ""),
+            "link": n.get("link", ""),
+            "summary": n.get("snippet", "") or "",
+        }
+        for n in news_results[:3]
+    ]
+    news_summaries = analysis_json.get("news_summaries")
+    if not isinstance(news_summaries, list) or not news_summaries:
+        news_summaries = fallback_news_summaries
+
     output_data = {
         "ticker": ticker,
         "period": {"buy_date": buy_date, "sell_date": state.get("layer2_sell_date")},
         "summary": analysis_json.get("summary"),
         "market_sentiment": analysis_json.get("market_sentiment"),
         "key_headlines": news_results[:3],
+        "news_summaries": news_summaries,
         "fact_check": analysis_json.get("fact_check"),
         "uncertainty_level": "low",
     }

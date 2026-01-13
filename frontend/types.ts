@@ -99,6 +99,42 @@ export interface N9FallbackResponse {
   intent_hint: string;
 }
 
+export interface N7NewsAnalysis {
+  news_context: {
+    ticker: string;
+    period: {
+      buy_date: string;
+      sell_date?: string;
+    };
+    summary: string;
+    market_sentiment: {
+      index: number;
+      label: string;
+      description: string;
+    };
+    key_headlines: {
+      title: string;
+      source: string;
+      date: string;
+      snippet?: string;
+      link: string;
+    }[];
+    news_summaries?: {
+      title: string;
+      source: string;
+      date: string;
+      link: string;
+      summary: string;
+    }[];
+    fact_check: {
+      user_belief: string;
+      actual_fact: string;
+      verdict: string;
+    };
+    uncertainty_level: string;
+  };
+}
+
 export interface AnalysisResult {
   request_id: string;
   n10_loss_review_report?: {
@@ -117,6 +153,7 @@ export interface AnalysisResult {
     };
     uncertainty_level: string;
   };
+  n7_news_analysis?: N7NewsAnalysis;
 }
 
 export interface Message {
