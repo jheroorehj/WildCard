@@ -8,14 +8,10 @@ export interface StockDetail {
 }
 
 export interface InvestmentFormData {
-<<<<<<< Updated upstream
   stockName: string;
   buyDate: string;
   sellDate: string;
   positionStatus: 'holding' | 'sold';
-=======
-  stocks: StockDetail[];
->>>>>>> Stashed changes
   decisionBasis: string[];
 }
 
