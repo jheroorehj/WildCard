@@ -1,0 +1,35 @@
+{
+  "layer1_stock": "",
+  "layer2_buy_date": "",
+  "layer2_sell_date": "",
+  "layer3_decision_basis": "",
+  "user_message": "",
+  "stock_analysis": {},
+  "news_analysis": {},
+  "loss_cause_analysis": {
+    "loss_check": "",
+    "root_causes": [],
+    "one_line_summary": "",
+    "detailed_explanation": ""
+  },
+  "market_context_analysis": {
+    "news_at_loss_time": [],
+    "market_situation_analysis": "",
+    "related_news": []
+  },
+  "n9_input": {
+    "investment_reason": "",
+    "loss_cause_summary": "",
+    "loss_cause_details": [],
+    "objective_signals": {
+      "price_trend": "up|down|sideways",
+      "volatility_level": "low|medium|high",
+      "technical_indicators": [],
+      "news_facts": []
+    },
+    "uncertainty_level": "low|medium|high"
+  },
+  "learning_pattern_analysis": {},
+  "loss_review_report": {},
+  "chat_entry": {}
+}

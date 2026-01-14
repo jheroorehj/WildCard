@@ -3,29 +3,29 @@ from typing import TypedDict, Dict
 
 
 class MainState(TypedDict, total=False):
-    # 입력 (레이어 1~3)
+    # N1: 입력 레이어
     layer1_stock: str
     layer2_buy_date: str
     layer2_sell_date: str
     layer3_decision_basis: str
-    n6_input: Dict[str, object]
-    n7_input: Dict[str, object]
-    n1_input_error: Dict[str, object]
+    user_message: str
 
-    # N6 출력
-    n6_stock_analysis: Dict[str, object]
+    # N6: 기술분석
+    stock_analysis: Dict[str, object]
 
-    # N7 출력
-    n7_news_analysis: Dict[str, object]
+    # N7: 뉴스 요약/시장 상황
+    news_analysis: Dict[str, object]
 
-    # N8 출력 (손실 분석)
-    n8_loss_analysis: Dict[str, object]
+    # N8: 손실 분석 + 시장상황 분석 + N9 입력 요약
+    loss_cause_analysis: Dict[str, object]
+    market_context_analysis: Dict[str, object]
+    n9_input: Dict[str, object]
 
-    # N9 출력 (학습 패턴 분석)
+    # N9: 학습 패턴 분석
     learning_pattern_analysis: Dict[str, object]
 
-    # N10 출력 (학습 튜터)
-    n10_loss_review_report: Dict[str, object]
+    # N10: 최종 리포트
+    loss_review_report: Dict[str, object]
 
-    # N4 출력 (채팅 진입)
-    n4_chat_entry: Dict[str, object]
+    # N4: 채팅 진입
+    chat_entry: Dict[str, object]
