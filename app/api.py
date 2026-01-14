@@ -160,10 +160,16 @@ async def analyze(req: AnalyzeRequest) -> Dict[str, Any]:
     request_id = str(uuid4())
     merged: Dict[str, Any] = {"request_id": request_id, **result}
 
+    n8_result = {
+        "n8_loss_cause_analysis": result.get("n8_loss_cause_analysis"),
+        "n8_market_context_analysis": result.get("n8_market_context_analysis"),
+        "n9_input": result.get("n9_input"),
+    }
+
     node_results: Dict[str, Any] = {
         "n6": result.get("n6_stock_analysis"),
         "n7": result.get("n7_news_analysis"),
-        "n8": result.get("n8_loss_analysis"),
+        "n8": n8_result,
         "n9": result.get("learning_pattern_analysis"),
         "n10": result.get("n10_loss_review_report"),
     }

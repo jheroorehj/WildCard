@@ -12,8 +12,8 @@ from .prompt import NODE8_LOSS_ANALYST_PROMPT
 
 def node8_loss_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    N8: 손실 분석가
-    N6/N7 결과를 근거로 손실 원인과 시장 상황을 분리해 출력한다.
+    N8: loss analyst.
+    Uses N6/N7 outputs to derive loss causes and market context.
     """
     payload = {
         "ticker": state.get("layer1_stock"),
@@ -27,32 +27,32 @@ def node8_loss_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
     llm = get_solar_chat()
     messages = [
         SystemMessage(content=NODE8_LOSS_ANALYST_PROMPT),
-        HumanMessage(content=f"다음 입력을 기반으로 JSON을 생성하세요:\n{payload}"),
+        HumanMessage(content=f"Build JSON using the following input.\n{payload}"),
     ]
 
     try:
         response = llm.invoke(messages)
         raw = response.content if isinstance(response.content, str) else str(response.content)
     except Exception as exc:
-        return {"n8_loss_analysis": _fallback(f"LLM 호출 실패: {exc}")}
+        return _fallback(f"LLM call failed: {exc}")
 
     if contains_advice(raw):
-        return {"n8_loss_analysis": _fallback("투자 조언 포함으로 차단됨")}
+        return _fallback("Blocked due to investment advice")
 
     parsed = parse_json(raw)
     if not isinstance(parsed, dict):
-        return {"n8_loss_analysis": _fallback("JSON 파싱 실패")}
+        return _fallback("JSON parse failed")
 
     if not validate_node8(parsed):
-        return {"n8_loss_analysis": _fallback("출력 스키마 검증 실패")}
+        return _fallback("Output schema validation failed")
 
-    return {"n8_loss_analysis": parsed}
+    return parsed
 
 
 def _fallback(reason: str) -> Dict[str, Any]:
     return {
         "n8_loss_cause_analysis": {
-            "loss_check": f"손실 원인 분석을 생성하지 못했습니다. ({reason})",
+            "loss_check": f"Failed to generate loss analysis. ({reason})",
             "root_causes": [],
             "one_line_summary": "",
             "detailed_explanation": "",

@@ -23,7 +23,9 @@ def node10_loss_review_report(state: Dict[str, Any]) -> Dict[str, Any]:
     Node10: N8/N9 결과를 기반으로 투자 학습 경로를 생성합니다.
     """
     payload = {
-        "n8_loss_analysis": state.get("n8_loss_analysis"),
+        "n8_loss_cause_analysis": state.get("n8_loss_cause_analysis"),
+        "n8_market_context_analysis": state.get("n8_market_context_analysis"),
+        "n9_input": state.get("n9_input"),
         "learning_pattern_analysis": state.get("learning_pattern_analysis"),
     }
 

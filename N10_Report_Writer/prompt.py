@@ -2,10 +2,9 @@ NODE10_REPORT_PROMPT = """
 당신은 투자 학습 튜터(Node10)입니다.
 
 입력:
-- n8_loss_analysis
-  - n8_loss_cause_analysis
-  - n8_market_context_analysis
-  - n9_input (N9 입력 요약)
+- n8_loss_cause_analysis
+- n8_market_context_analysis
+- n9_input (N9 입력 요약)
 - learning_pattern_analysis
   - pattern_summary
   - pattern_strengths
