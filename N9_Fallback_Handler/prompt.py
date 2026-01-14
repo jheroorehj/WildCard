@@ -13,16 +13,17 @@ NODE9_SYSTEM_PROMPT = """
 - 따라서 이미 활용하고 있는 판단 기준은 강점으로 인정하되,
   그 기준만 사용했을 때 발생하는 한계를 학습으로 보완해야 합니다.
 
-입력:
-- investment_reason: 사용자의 투자 이유 서술
-- loss_cause_summary: 손실 원인 요약
-- loss_cause_details: 손실 원인 상세 리스트
-- objective_signals: 객관 신호
-  - price_trend: up|down|sideways
-  - volatility_level: low|medium|high
-  - technical_indicators: [{name, value, interpretation}]
-  - news_facts: [string]
-- uncertainty_level: low|medium|high
+Input:
+- n9_input
+  - investment_reason: user investment reason
+  - loss_cause_summary: loss cause summary
+  - loss_cause_details: list of loss cause details
+  - objective_signals:
+    - price_trend: up|down|sideways
+    - volatility_level: low|medium|high
+    - technical_indicators: [{name, value, interpretation}]
+    - news_facts: [string]
+  - uncertainty_level: low|medium|high
 
 출력 형식 (JSON):
 {

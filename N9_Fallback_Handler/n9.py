@@ -14,14 +14,17 @@ def node9_fallback_handler(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     llm = get_solar_chat()
 
+    n9_input = state.get("n9_input")
+    if not isinstance(n9_input, dict):
+        n9_input = {}
+
     payload = {
-        "investment_reason": state.get("investment_reason")
-        or state.get("investment_pattern")
+        "investment_reason": n9_input.get("investment_reason")
         or state.get("layer3_decision_basis"),
-        "loss_cause_summary": state.get("loss_cause_summary", ""),
-        "loss_cause_details": state.get("loss_cause_details", []),
-        "objective_signals": state.get("objective_signals", {}),
-        "uncertainty_level": state.get("uncertainty_level", "high"),
+        "loss_cause_summary": n9_input.get("loss_cause_summary", ""),
+        "loss_cause_details": n9_input.get("loss_cause_details", []),
+        "objective_signals": n9_input.get("objective_signals", {}),
+        "uncertainty_level": n9_input.get("uncertainty_level", "high"),
     }
 
     messages = [
