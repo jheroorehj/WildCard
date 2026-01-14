@@ -122,36 +122,63 @@ def validate_node6(data: Dict[str, Any]) -> bool:
 
 def validate_node7(data: Dict[str, Any]) -> bool:
     """
-    Node7 출력 JSON 최소 스키마 검증
+    Node7 ??? JSON ??? ?????????
     """
-    from N7_News_Summarizer.schema import ALLOWED_SENTIMENT
     from N3_Loss_Analyzer.schema import ALLOWED_UNCERTAINTY
 
-    summary = data.get("news_summary")
-    if not isinstance(summary, dict):
+    context = data.get("news_context")
+    if not isinstance(context, dict):
         return False
 
-    if not isinstance(summary.get("query"), str):
+    if not isinstance(context.get("ticker"), str):
         return False
 
-    key_events = summary.get("key_events")
-    if not isinstance(key_events, list):
+    period = context.get("period")
+    if not isinstance(period, dict):
+        return False
+    if not isinstance(period.get("buy_date"), str):
         return False
 
-    for event in key_events:
-        if not isinstance(event, dict):
+    if not isinstance(context.get("summary"), str):
+        return False
+
+    market_sentiment = context.get("market_sentiment")
+    if not isinstance(market_sentiment, dict):
+        return False
+    if not isinstance(market_sentiment.get("label"), str):
+        return False
+    if not isinstance(market_sentiment.get("description"), str):
+        return False
+
+    key_headlines = context.get("key_headlines")
+    if not isinstance(key_headlines, list):
+        return False
+    for item in key_headlines:
+        if not isinstance(item, dict):
             return False
-        for key in ("headline", "source", "date", "summary"):
-            if not isinstance(event.get(key), str):
+        for key in ("title", "source", "date", "link"):
+            if not isinstance(item.get(key), str):
                 return False
 
-    if summary.get("sentiment") not in ALLOWED_SENTIMENT:
-        return False
+    news_summaries = context.get("news_summaries")
+    if news_summaries is not None:
+        if not isinstance(news_summaries, list):
+            return False
+        for item in news_summaries:
+            if not isinstance(item, dict):
+                return False
+            for key in ("title", "source", "date", "link", "summary"):
+                if not isinstance(item.get(key), str):
+                    return False
 
-    if not isinstance(summary.get("impact_assessment"), str):
+    fact_check = context.get("fact_check")
+    if not isinstance(fact_check, dict):
         return False
+    for key in ("user_belief", "actual_fact", "verdict"):
+        if not isinstance(fact_check.get(key), str):
+            return False
 
-    if summary.get("uncertainty_level") not in ALLOWED_UNCERTAINTY:
+    if context.get("uncertainty_level") not in ALLOWED_UNCERTAINTY:
         return False
 
     return True
