@@ -3,6 +3,7 @@ from typing import Any, Dict
 import json
 
 from core.llm import get_solar_chat, get_upstage_embeddings
+from .prompt import NODE7_SUMMARY_PROMPT
 from .search_tool import search_news_with_serper
 
 # Repository imports - optional (will be used when available)
@@ -29,16 +30,7 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
     buy_date = state.get("layer2_buy_date", "Unknown")
     user_reason = state.get("layer3_decision_basis", "판단 근거 없음")
 
-    n3_analysis = state.get("n3_loss_analysis", {})
-    loss_factors = n3_analysis.get("loss_factors", [])
-
     search_query = f"{ticker} 악재"
-    for factor in loss_factors:
-        if factor.get("type") == "information_bias":
-            missing_check_hint = factor.get("evidence", {}).get("missing_check", "")
-            if missing_check_hint:
-                search_query = f"{ticker} {missing_check_hint}"
-            break
 
     print(f"[*] N7 searching for: {search_query} around {buy_date}")
 
@@ -84,26 +76,12 @@ def node7_news_summarizer(state: Dict[str, Any]) -> Dict[str, Any]:
     llm = get_solar_chat()
     news_payload = json.dumps(news_items, ensure_ascii=False)
 
-    prompt = f"""
-당신은 시장 뉴스 분석가입니다. 사용자의 믿음과 현재 뉴스를 비교해 뉴스 항목을 요약하세요.
-
-입력:
-- ticker: {ticker}
-- buy_date: {buy_date}
-- user_reason: {user_reason}
-- news_items: {news_payload}
-
-출력은 JSON만 포함하세요. 다음을 반드시 포함:
-1) summary: 전체 시장/뉴스 요약(간단)
-2) market_sentiment: index 0-100, label (fear|neutral|greed), description
-3) fact_check: user_belief, actual_fact, verdict (mismatch|match|biased)
-4) news_summaries: 3개 항목 리스트 (title, source, date, link, summary)
-
-규칙:
-- 각 뉴스 요약은 2~3문장으로, 조금 구체적으로 작성(일반론 금지).
-- 중립 톤 유지. 투자 조언 금지.
-- 뉴스에 정보가 부족하면 그 사실을 요약에 간단히 언급.
-""".strip()
+    prompt = NODE7_SUMMARY_PROMPT.format(
+        ticker=ticker,
+        buy_date=buy_date,
+        user_reason=user_reason,
+        news_items=news_payload,
+    )
 
     try:
         response = llm.invoke(prompt)

@@ -85,6 +85,7 @@ def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
     - 구조화된 분석 결과를 반환
     - LLM을 통해 차트 해석 요약을 추가
     """
+    # Input keys: layer1_stock, layer2_buy_date, layer2_sell_date, layer3_decision_basis
     stock_name = state.get("layer1_stock")
     buy_date = state.get("layer2_buy_date")
     sell_date = state.get("layer2_sell_date")
