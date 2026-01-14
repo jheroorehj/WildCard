@@ -161,7 +161,7 @@ def validate_node8(data: Dict[str, Any]) -> bool:
     """
     Node8 JSON schema validator (loss analyst)
     """
-    loss_cause = data.get("loss_cause_analysis")
+    loss_cause = data.get("n8_loss_cause_analysis")
     if not isinstance(loss_cause, dict):
         return False
 
@@ -175,7 +175,7 @@ def validate_node8(data: Dict[str, Any]) -> bool:
     if any(not isinstance(item, str) for item in root_causes):
         return False
 
-    market_context = data.get("market_context_analysis")
+    market_context = data.get("n8_market_context_analysis")
     if not isinstance(market_context, dict):
         return False
 

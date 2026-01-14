@@ -12,14 +12,14 @@ class MainState(TypedDict, total=False):
     trade_period: Dict[str, object]
 
     # N6: 기술분석
-    stock_analysis: Dict[str, object]
+    n6_stock_analysis: Dict[str, object]
 
     # N7: 뉴스 요약/시장 상황
-    news_analysis: Dict[str, object]
+    n7_news_analysis: Dict[str, object]
 
     # N8: 손실 분석 + 시장상황 분석 + N9 입력 요약
-    loss_cause_analysis: Dict[str, object]
-    market_context_analysis: Dict[str, object]
+    n8_loss_cause_analysis: Dict[str, object]
+    n8_market_context_analysis: Dict[str, object]
     n9_input: Dict[str, object]
 
     # N9: 학습 패턴 분석

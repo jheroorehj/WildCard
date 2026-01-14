@@ -3,8 +3,8 @@ NODE10_REPORT_PROMPT = """
 
 입력:
 - n8_loss_analysis
-  - loss_cause_analysis
-  - market_context_analysis
+  - n8_loss_cause_analysis
+  - n8_market_context_analysis
   - n9_input (N9 입력 요약)
 - learning_pattern_analysis
   - pattern_summary

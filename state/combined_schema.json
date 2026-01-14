@@ -9,15 +9,15 @@
     "sell_date": "",
     "position_status": "holding|sold"
   },
-  "stock_analysis": {},
-  "news_analysis": {},
-  "loss_cause_analysis": {
+  "n6_stock_analysis": {},
+  "n7_news_analysis": {},
+  "n8_loss_cause_analysis": {
     "loss_check": "",
     "root_causes": [],
     "one_line_summary": "",
     "detailed_explanation": ""
   },
-  "market_context_analysis": {
+  "n8_market_context_analysis": {
     "news_at_loss_time": [],
     "market_situation_analysis": "",
     "related_news": []

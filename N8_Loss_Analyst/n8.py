@@ -51,13 +51,13 @@ def node8_loss_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
 
 def _fallback(reason: str) -> Dict[str, Any]:
     return {
-        "loss_cause_analysis": {
+        "n8_loss_cause_analysis": {
             "loss_check": f"손실 원인 분석을 생성하지 못했습니다. ({reason})",
             "root_causes": [],
             "one_line_summary": "",
             "detailed_explanation": "",
         },
-        "market_context_analysis": {
+        "n8_market_context_analysis": {
             "news_at_loss_time": [],
             "market_situation_analysis": "",
             "related_news": [],

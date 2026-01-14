@@ -643,7 +643,7 @@ def fallback_result(error_message: str = "데이터를 확보하지 못했습니
         기본 분석 결과 구조
     """
     return {
-        "stock_analysis": {
+        "n6_stock_analysis": {
             "summary": f"주가 흐름 정보를 확보하지 못했습니다. ({error_message})",
             "price_move": {
                 "start_price": "unknown",

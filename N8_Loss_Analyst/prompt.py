@@ -14,13 +14,13 @@ N6(기술/가격)과 N7(뉴스/시장) 결과를 근거로 손실 원인을 구�
 출력은 JSON만 포함하세요.
 스키마:
 {
-  "loss_cause_analysis": {
+  "n8_loss_cause_analysis": {
     "loss_check": "손실 확인",
     "root_causes": ["손실 원인 분석"],
     "one_line_summary": "요약 한 줄",
     "detailed_explanation": "상세 설명"
   },
-  "market_context_analysis": {
+  "n8_market_context_analysis": {
     "news_at_loss_time": ["손실 시점 뉴스 자료 확인"],
     "market_situation_analysis": "자료 기반 시장 상황 분석",
     "related_news": ["시장 상황 분석과 관련 뉴스"]
