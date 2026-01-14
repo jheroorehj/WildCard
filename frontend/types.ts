@@ -1,9 +1,21 @@
 
+export interface StockDetail {
+  name: string;
+  status: 'holding' | 'sold';
+  period: string;
+  customPeriod?: string;
+  patterns: string[];
+}
+
 export interface InvestmentFormData {
+<<<<<<< Updated upstream
   stockName: string;
   buyDate: string;
   sellDate: string;
   positionStatus: 'holding' | 'sold';
+=======
+  stocks: StockDetail[];
+>>>>>>> Stashed changes
   decisionBasis: string[];
 }
 
