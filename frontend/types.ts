@@ -3,6 +3,7 @@ export interface InvestmentFormData {
   stockName: string;
   buyDate: string;
   sellDate: string;
+  positionStatus: 'holding' | 'sold';
   decisionBasis: string[];
 }
 

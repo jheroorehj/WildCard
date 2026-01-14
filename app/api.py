@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from datetime import datetime
 from typing import Any, Dict, List, Tuple
 from uuid import uuid4
 
@@ -20,6 +21,7 @@ class AnalyzeRequest(BaseModel):
     layer2_buy_date: str
     layer2_sell_date: str
     layer3_decision_basis: str
+    position_status: str | None = None
     user_message: str | None = None
 
 
@@ -150,6 +152,8 @@ async def analyze(req: AnalyzeRequest) -> Dict[str, Any]:
         state = req.dict()
     if not state.get("user_message"):
         state["user_message"] = state.get("layer3_decision_basis", "")
+    if state.get("position_status") == "holding" and not state.get("layer2_sell_date"):
+        state["layer2_sell_date"] = datetime.utcnow().date().isoformat()
 
     result = await asyncio.to_thread(_graph.invoke, state)
 

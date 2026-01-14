@@ -9,6 +9,7 @@ class MainState(TypedDict, total=False):
     layer2_sell_date: str
     layer3_decision_basis: str
     user_message: str
+    trade_period: Dict[str, object]
 
     # N6: 기술분석
     stock_analysis: Dict[str, object]

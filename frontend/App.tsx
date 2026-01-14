@@ -13,6 +13,7 @@ const App: React.FC = () => {
     stockName: '',
     buyDate: '',
     sellDate: '',
+    positionStatus: 'holding',
     decisionBasis: []
   });
   const [loading, setLoading] = useState<boolean>(false);
@@ -46,6 +47,7 @@ const App: React.FC = () => {
       stockName: '',
       buyDate: '',
       sellDate: '',
+      positionStatus: 'holding',
       decisionBasis: []
     });
     setStep(1);
@@ -282,6 +284,33 @@ const App: React.FC = () => {
                 <h1 className="text-3xl font-bold mb-8 leading-tight">언제 <span className="text-blue-400">매매</span>하셨나요?</h1>
                 <div className="space-y-8">
                   <div className="group">
+                    <label className="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-widest">?? ??</label>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, positionStatus: 'holding' })}
+                        className={`flex-1 rounded-2xl border p-4 text-sm font-bold transition-all ${
+                          formData.positionStatus === 'holding'
+                            ? 'bg-emerald-600 border-emerald-400 text-white shadow-lg shadow-emerald-900/20'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        ?? ?
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, positionStatus: 'sold' })}
+                        className={`flex-1 rounded-2xl border p-4 text-sm font-bold transition-all ${
+                          formData.positionStatus === 'sold'
+                            ? 'bg-blue-600 border-blue-400 text-white shadow-lg shadow-blue-900/30'
+                            : 'bg-slate-900 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        ?? ??
+                      </button>
+                    </div>
+                  </div>
+                  <div className="group">
                     <label className="text-xs font-bold text-slate-500 mb-2 block uppercase tracking-widest">매수 시점</label>
                     <input type="date" className="w-full bg-slate-900 border-b-2 border-slate-800 p-4 text-lg focus:border-blue-500 outline-none rounded-t-lg text-white appearance-none" value={formData.buyDate} onChange={e => setFormData({...formData, buyDate: e.target.value})} />
                   </div>
@@ -309,7 +338,7 @@ const App: React.FC = () => {
             )}
           </div>
           <div className="mt-8 space-y-4 shrink-0">
-            <button onClick={step === 3 ? handleAnalysis : nextStep} disabled={(step === 1 && !formData.stockName) || (step === 2 && (!formData.buyDate || !formData.sellDate)) || (step === 3 && formData.decisionBasis.length === 0)} className="w-full bg-blue-600 disabled:bg-slate-800 disabled:opacity-50 text-white p-5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl shadow-blue-900/20">{step === 3 ? 'AI 분석 리포트 생성' : '다음으로 넘어가기'} {ICONS.ArrowRight}</button>
+            <button onClick={step === 3 ? handleAnalysis : nextStep} disabled={(step === 1 && !formData.stockName) || (step === 2 && (!formData.buyDate || (formData.positionStatus === 'sold' && !formData.sellDate))) || (step === 3 && formData.decisionBasis.length === 0)} className="w-full bg-blue-600 disabled:bg-slate-800 disabled:opacity-50 text-white p-5 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-xl shadow-blue-900/20">{step === 3 ? 'AI 분석 리포트 생성' : '다음으로 넘어가기'} {ICONS.ArrowRight}</button>
           </div>
         </div>
       </div>

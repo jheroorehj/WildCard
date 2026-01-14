@@ -15,6 +15,7 @@ export const analyzeInvestmentLoss = async (
       layer1_stock: data.stockName,
       layer2_buy_date: data.buyDate,
       layer2_sell_date: data.sellDate,
+      position_status: data.positionStatus,
       layer3_decision_basis: data.decisionBasis.join(", "),
     }),
   });

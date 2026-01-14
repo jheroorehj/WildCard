@@ -1,12 +1,5 @@
 from typing import Any, Dict, List
 
-from langchain_core.messages import HumanMessage, SystemMessage
-
-from core.llm import get_solar_chat
-from utils.json_parser import parse_json
-
-from .prompt import NODE1_SYSTEM_PROMPT
-
 
 REQUIRED_FIELDS = (
     "layer1_stock",
@@ -18,9 +11,10 @@ REQUIRED_FIELDS = (
 
 def node1_input_handler(state: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Node1: N6/N7에 전달할 입력을 정규화해 JSON 페이로드로 반환합니다.
+    Node1: 입력값을 통합 스키마 키로 정규화한다.
     """
-    missing = _missing_required(state, REQUIRED_FIELDS)
+    normalized = _normalize_payload(state)
+    missing = _missing_required(normalized, REQUIRED_FIELDS)
     if missing:
         return {
             "n1_input_error": {
@@ -29,30 +23,7 @@ def node1_input_handler(state: Dict[str, Any]) -> Dict[str, Any]:
             }
         }
 
-    payload = {
-        "layer1_stock": state.get("layer1_stock"),
-        "layer2_buy_date": state.get("layer2_buy_date"),
-        "layer2_sell_date": state.get("layer2_sell_date"),
-        "layer3_decision_basis": state.get("layer3_decision_basis"),
-    }
-
-    llm = get_solar_chat()
-    messages = [
-        SystemMessage(content=NODE1_SYSTEM_PROMPT),
-        HumanMessage(content=f"Build the JSON payloads:\n{payload}"),
-    ]
-
-    try:
-        response = llm.invoke(messages)
-        raw = response.content if isinstance(response.content, str) else str(response.content)
-    except Exception:
-        return _fallback_payload(payload)
-
-    parsed = parse_json(raw)
-    if not _validate_output(parsed):
-        return _fallback_payload(payload)
-
-    return parsed
+    return normalized
 
 
 def _missing_required(state: Dict[str, Any], keys: List[str]) -> List[str]:
@@ -64,39 +35,33 @@ def _missing_required(state: Dict[str, Any], keys: List[str]) -> List[str]:
     return missing
 
 
-def _validate_output(data: Any) -> bool:
-    if not isinstance(data, dict):
-        return False
+def _normalize_payload(state: Dict[str, Any]) -> Dict[str, Any]:
+    layer1_stock = _normalize_text(state.get("layer1_stock"))
+    layer2_buy_date = _normalize_text(state.get("layer2_buy_date"))
+    layer2_sell_date = _normalize_text(state.get("layer2_sell_date"))
+    layer3_decision_basis = _normalize_text(state.get("layer3_decision_basis"))
+    user_message = _normalize_text(state.get("user_message"))
+    position_status = _normalize_text(state.get("position_status"))
+    if not user_message:
+        user_message = layer3_decision_basis
+    if position_status not in ("holding", "sold"):
+        position_status = ""
 
-    n6_input = data.get("n6_input")
-    n7_input = data.get("n7_input")
-    if not isinstance(n6_input, dict) or not isinstance(n7_input, dict):
-        return False
-
-    for key in ("ticker", "buy_date", "sell_date"):
-        if not isinstance(n6_input.get(key), str):
-            return False
-
-    for key in ("ticker", "buy_date", "user_belief"):
-        if not isinstance(n7_input.get(key), str):
-            return False
-
-    if set(data.keys()) != {"n6_input", "n7_input"}:
-        return False
-
-    return True
-
-
-def _fallback_payload(payload: Dict[str, Any]) -> Dict[str, Any]:
     return {
-        "n6_input": {
-            "ticker": payload.get("layer1_stock", ""),
-            "buy_date": payload.get("layer2_buy_date", ""),
-            "sell_date": payload.get("layer2_sell_date", ""),
-        },
-        "n7_input": {
-            "ticker": payload.get("layer1_stock", ""),
-            "buy_date": payload.get("layer2_buy_date", ""),
-            "user_belief": payload.get("layer3_decision_basis", ""),
+        "layer1_stock": layer1_stock,
+        "layer2_buy_date": layer2_buy_date,
+        "layer2_sell_date": layer2_sell_date,
+        "layer3_decision_basis": layer3_decision_basis,
+        "user_message": user_message,
+        "trade_period": {
+            "buy_date": layer2_buy_date,
+            "sell_date": layer2_sell_date,
+            "position_status": position_status,
         },
     }
+
+
+def _normalize_text(value: Any) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip()

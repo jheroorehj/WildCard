@@ -4,6 +4,11 @@
   "layer2_sell_date": "",
   "layer3_decision_basis": "",
   "user_message": "",
+  "trade_period": {
+    "buy_date": "",
+    "sell_date": "",
+    "position_status": "holding|sold"
+  },
   "stock_analysis": {},
   "news_analysis": {},
   "loss_cause_analysis": {
