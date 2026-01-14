@@ -1,40 +1,135 @@
 {
-  "layer1_stock": "",
-  "layer2_buy_date": "",
-  "layer2_sell_date": "",
-  "layer3_decision_basis": "",
-  "user_message": "",
-  "trade_period": {
-    "buy_date": "",
-    "sell_date": "",
-    "position_status": "holding|sold"
+  "N1": {
+    "layer1_stock": "",
+    "layer2_buy_date": "",
+    "layer2_sell_date": "",
+    "layer3_decision_basis": "",
+    "user_message": "",
+    "trade_period": {
+      "buy_date": "",
+      "sell_date": "",
+      "position_status": ""
+    }
   },
-  "n6_stock_analysis": {},
-  "n7_news_analysis": {},
-  "n8_loss_cause_analysis": {
-    "loss_check": "",
-    "root_causes": [],
-    "one_line_summary": "",
-    "detailed_explanation": ""
+  "N6": {
+    "n6_stock_analysis": {
+      "stock_analysis": {
+        "ticker": "",
+        "resolved_from": "",
+        "period": {
+          "buy_date": "",
+          "sell_date": ""
+        },
+        "summary": "",
+        "price_move": {
+          "start_price": "",
+          "end_price": "",
+          "pct_change": "",
+          "highest": "",
+          "lowest": ""
+        },
+        "trend": "",
+        "indicators": [],
+        "volume_analysis": {},
+        "risk_notes": [],
+        "uncertainty_level": ""
+      }
+    }
   },
-  "n8_market_context_analysis": {
-    "news_at_loss_time": [],
-    "market_situation_analysis": "",
-    "related_news": []
+  "N7": {
+    "n7_news_analysis": {
+      "news_context": {
+        "ticker": "",
+        "period": {
+          "buy_date": "",
+          "sell_date": ""
+        },
+        "summary": "",
+        "market_sentiment": {
+          "index": 0,
+          "label": "fear|neutral|greed",
+          "description": ""
+        },
+        "key_headlines": [],
+        "news_summaries": [],
+        "fact_check": {
+          "user_belief": "",
+          "actual_fact": "",
+          "verdict": "mismatch|match|biased"
+        },
+        "uncertainty_level": "low|medium|high"
+      }
+    }
   },
-  "n9_input": {
-    "investment_reason": "",
-    "loss_cause_summary": "",
-    "loss_cause_details": [],
-    "objective_signals": {
-      "price_trend": "up|down|sideways",
-      "volatility_level": "low|medium|high",
-      "technical_indicators": [],
-      "news_facts": []
-    },
-    "uncertainty_level": "low|medium|high"
+  "N8": {
+    "n8_loss_analysis": {
+      "n8_loss_cause_analysis": {
+        "loss_check": "",
+        "root_causes": [],
+        "one_line_summary": "",
+        "detailed_explanation": ""
+      },
+      "n8_market_context_analysis": {
+        "news_at_loss_time": [],
+        "market_situation_analysis": "",
+        "related_news": []
+      },
+      "n9_input": {
+        "investment_reason": "",
+        "loss_cause_summary": "",
+        "loss_cause_details": [],
+        "objective_signals": {
+          "price_trend": "up|down|sideways",
+          "volatility_level": "low|medium|high",
+          "technical_indicators": [],
+          "news_facts": []
+        },
+        "uncertainty_level": "low|medium|high"
+      }
+    }
   },
-  "learning_pattern_analysis": {},
-  "loss_review_report": {},
-  "chat_entry": {}
+  "N9": {
+    "learning_pattern_analysis": {
+      "pattern_summary": "",
+      "pattern_strengths": [],
+      "pattern_weaknesses": [],
+      "learning_recommendation": {
+        "focus_area": "",
+        "learning_reason": "",
+        "learning_steps": [],
+        "recommended_topics": []
+      },
+      "uncertainty_level": "low|medium|high"
+    }
+  },
+  "N10": {
+    "n10_loss_review_report": {
+      "report_title": "",
+      "overall_summary": "",
+      "node_summaries": {
+        "n6": {
+          "summary": "",
+          "details": []
+        },
+        "n7": {
+          "summary": "",
+          "details": []
+        },
+        "n8": {
+          "summary": "",
+          "details": []
+        },
+        "n9": {
+          "summary": "",
+          "details": []
+        }
+      },
+      "learning_materials": {
+        "key_takeaways": [],
+        "recommended_topics": [],
+        "practice_steps": []
+      },
+      "uncertainty_level": "low|medium|high"
+    }
+  }
 }
