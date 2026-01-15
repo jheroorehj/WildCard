@@ -4,9 +4,12 @@ from typing import Any, Dict
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from core.llm import get_solar_chat
+from langsmith.run_helpers import get_current_run_tree
 from utils.json_parser import parse_json
 from utils.safety import contains_advice
 from utils.validator import validate_node8
+from metrics.llm_judge import judge_consistency_sync
+from metrics.models import METRIC_TARGETS
 from .prompt import NODE8_LOSS_ANALYST_PROMPT
 
 
@@ -46,11 +49,15 @@ def node8_loss_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
     if not validate_node8(parsed):
         return _fallback("Output schema validation failed")
 
+    n8_eval = _evaluate_n8_metrics(parsed)
+    n8_eval.update(_evaluate_n8_llm_metrics(parsed, state))
+    parsed["n8_eval"] = n8_eval
+    _record_n8_eval_to_langsmith(n8_eval)
     return parsed
 
 
 def _fallback(reason: str) -> Dict[str, Any]:
-    return {
+    payload = {
         "n8_loss_cause_analysis": {
             "loss_check": f"분석 생성 실패. ({reason})",
             "loss_amount_pct": "N/A",
@@ -118,3 +125,120 @@ def _fallback(reason: str) -> Dict[str, Any]:
             "uncertainty_level": "high",
         },
     }
+    n8_eval = _evaluate_n8_metrics(payload)
+    n8_eval.update(_evaluate_n8_llm_metrics(payload, {}))
+    payload["n8_eval"] = n8_eval
+    _record_n8_eval_to_langsmith(n8_eval)
+    return payload
+
+
+def _evaluate_n8_metrics(data: Dict[str, Any]) -> Dict[str, Any]:
+    root_causes = []
+    loss = data.get("n8_loss_cause_analysis")
+    if isinstance(loss, dict):
+        root_causes = loss.get("root_causes") if isinstance(loss.get("root_causes"), list) else []
+
+    total_causes = len(root_causes)
+    with_evidence = 0
+    for cause in root_causes:
+        evidence = cause.get("evidence") if isinstance(cause, dict) else None
+        if isinstance(evidence, list) and evidence:
+            with_evidence += 1
+
+    evidence_coverage = (with_evidence / total_causes * 100) if total_causes else 0.0
+
+    objective = {}
+    n9_input = data.get("n9_input")
+    if isinstance(n9_input, dict):
+        objective = n9_input.get("objective_signals") if isinstance(n9_input.get("objective_signals"), dict) else {}
+
+    tech = objective.get("technical_indicators") if isinstance(objective.get("technical_indicators"), list) else []
+    news = objective.get("news_facts") if isinstance(objective.get("news_facts"), list) else []
+    coverage_parts = int(bool(tech)) + int(bool(news))
+    objective_signals_coverage = (coverage_parts / 2 * 100) if coverage_parts >= 0 else 0.0
+
+    return {
+        "schema_valid": validate_node8(data),
+        "root_causes_count": total_causes,
+        "evidence_coverage_pct": round(evidence_coverage, 2),
+        "objective_signals_coverage_pct": round(objective_signals_coverage, 2),
+        "has_technical_indicators": bool(tech),
+        "has_news_facts": bool(news),
+    }
+
+
+def _evaluate_n8_llm_metrics(
+    n8_data: Dict[str, Any],
+    state: Dict[str, Any],
+) -> Dict[str, Any]:
+    news_text = _build_news_text(state.get("n7_news_analysis") or {})
+    ai_text = _build_n8_text(n8_data)
+    if not news_text or not ai_text:
+        return {"llm_fact_consistency_score": None}
+
+    try:
+        llm = get_solar_chat()
+        score = judge_consistency_sync(llm, news_text, ai_text)
+    except Exception:
+        return {"llm_fact_consistency_score": None}
+
+    target = METRIC_TARGETS.get("fact_consistency_score", 95.0)
+    return {
+        "llm_fact_consistency_score": round(score, 2),
+        "llm_fact_consistency_passed": score >= target,
+    }
+
+
+def _build_news_text(n7_data: Dict[str, Any]) -> str:
+    if not isinstance(n7_data, dict):
+        return ""
+    context = n7_data.get("news_context")
+    if not isinstance(context, dict):
+        return ""
+    items = context.get("key_headlines")
+    if not isinstance(items, list):
+        return ""
+    parts = []
+    for item in items[:5]:
+        if not isinstance(item, dict):
+            continue
+        title = item.get("title") or ""
+        snippet = item.get("snippet") or ""
+        line = " ".join(part for part in [title.strip(), snippet.strip()] if part)
+        if line:
+            parts.append(line)
+    return "\n".join(parts).strip()
+
+
+def _build_n8_text(n8_data: Dict[str, Any]) -> str:
+    if not isinstance(n8_data, dict):
+        return ""
+    loss = n8_data.get("n8_loss_cause_analysis")
+    if not isinstance(loss, dict):
+        return ""
+    parts = []
+    summary = loss.get("one_line_summary")
+    if isinstance(summary, str) and summary.strip():
+        parts.append(summary.strip())
+    root_causes = loss.get("root_causes")
+    if isinstance(root_causes, list):
+        for cause in root_causes[:3]:
+            if not isinstance(cause, dict):
+                continue
+            desc = cause.get("description") or cause.get("title")
+            if isinstance(desc, str) and desc.strip():
+                parts.append(desc.strip())
+    return "\n".join(parts).strip()
+
+
+def _record_n8_eval_to_langsmith(n8_eval: Dict[str, Any]) -> None:
+    """
+    Attach N8 evaluation metrics to the current LangSmith run if tracing is enabled.
+    """
+    try:
+        run = get_current_run_tree()
+        if run:
+            run.add_metadata({"n8_eval": n8_eval})
+    except Exception:
+        # Best-effort only; never fail N8 due to tracing
+        return
