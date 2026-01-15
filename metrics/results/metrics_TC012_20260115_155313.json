@@ -1,0 +1,93 @@
+{
+  "request_id": "TC012",
+  "timestamp": "2026-01-15T15:53:13.780608",
+  "metrics": [
+    {
+      "metric_name": "E2E Latency",
+      "tier": "stability",
+      "value": 0.0,
+      "target": 15.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.780577",
+      "request_id": "TC012",
+      "metadata": {
+        "unit": "seconds",
+        "start_time": "2026-01-15T15:53:13.780570",
+        "end_time": "2026-01-15T15:53:13.780574"
+      }
+    },
+    {
+      "metric_name": "JSON Stability Rate",
+      "tier": "stability",
+      "value": 100.0,
+      "target": 99.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.780580",
+      "request_id": "TC012",
+      "metadata": {
+        "total_validations": 3,
+        "successful_validations": 3,
+        "failed_validations": 0,
+        "unit": "percent"
+      }
+    },
+    {
+      "metric_name": "Zero-Anachronism Rate",
+      "tier": "trust",
+      "value": 100.0,
+      "target": 100.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.780592",
+      "request_id": "TC012",
+      "metadata": {
+        "total_news": 0,
+        "valid_news": 0,
+        "invalid_news": 0,
+        "note": "No news items to validate"
+      }
+    },
+    {
+      "metric_name": "Time-to-Insight Efficiency",
+      "tier": "impact",
+      "value": 100.0,
+      "target": 99.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.780595",
+      "request_id": "TC012",
+      "metadata": {
+        "ai_latency_seconds": 0.0,
+        "human_baseline_seconds": 1800,
+        "human_baseline_minutes": 30.0,
+        "time_saved_seconds": 1800.0,
+        "time_saved_minutes": 30.0,
+        "unit": "percent"
+      }
+    },
+    {
+      "metric_name": "Blind Spot Detection",
+      "tier": "impact",
+      "value": 0.0,
+      "target": 0.4,
+      "passed": false,
+      "timestamp": "2026-01-15T15:53:13.780602",
+      "request_id": "TC012",
+      "metadata": {
+        "label": "failure",
+        "description": "AI가 정답을 찾지 못함",
+        "user_belief_similarity": 0.5,
+        "ai_conclusion_similarity": 0.5,
+        "is_ai_correct": false,
+        "is_user_biased": false,
+        "user_belief": "2분기 가이던스가 안 좋게 나와서 떨어진 것 같다",
+        "ai_conclusion": "글로벌 시장 변동성 증가",
+        "ground_truth": "매도 시점 전에는 유럽 전기차 보조금 축소 뉴스가 주요 하락 요인"
+      }
+    }
+  ],
+  "summary": {
+    "impact": 50.0,
+    "trust": 100.0,
+    "stability": 100.0,
+    "overall": 80.0
+  }
+}
