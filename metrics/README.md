@@ -169,14 +169,52 @@ if __name__ == "__main__":
 
 ---
 
+---
+
+## 배치 처리 (Golden Dataset 분석)
+
+### 한 번에 모든 테스트 케이스 처리
+
+```bash
+# 기본 메트릭만 평가 (빠름)
+python3 metrics/batch_processor.py
+
+# LLM 기반 정밀 평가 포함 (느리지만 정확)
+python3 metrics/batch_processor.py --llm
+```
+
+### 실행 결과
+
+```
+✓ 성공: 10/10
+✗ 실패: 0/10
+
+💾 결과는 metrics/results/ 에 저장되었습니다
+
+📊 개별 결과 요약
+✓ TC001 (hidden_truth)
+   Impact: 85.0%
+   Trust: 90.0%
+   Stability: 95.0%
+✓ TC002 (time_traveler)
+   Impact: 80.0%
+   Trust: 85.0%
+   Stability: 95.0%
+...
+```
+
+---
+
 ## 결과 저장 위치
 
 메트릭 결과는 `metrics/results/` 디렉토리에 저장됩니다:
 
 ```
 metrics/results/
-├── metrics_{request_id}_{timestamp}.json   # 개별 요청 결과
-└── metrics_history.csv                     # 시계열 누적 데이터
+├── metrics_TC001_20250115_140530.json     # 개별 요청 결과
+├── metrics_TC002_20250115_140531.json     
+├── ...
+└── metrics_history.csv                    # 시계열 누적 데이터
 ```
 
 ### JSON 결과 예시

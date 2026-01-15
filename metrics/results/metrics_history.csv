@@ -1,0 +1,71 @@
+timestamp,request_id,metric_name,tier,value,target,passed
+2026-01-15T15:53:13.776758,TC001,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.776758,TC001,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.776758,TC001,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.776758,TC001,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.776758,TC001,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.777281,TC002,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.777281,TC002,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.777281,TC002,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.777281,TC002,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.777281,TC002,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.777587,TC003,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.777587,TC003,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.777587,TC003,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.777587,TC003,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.777587,TC003,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.777982,TC004,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.777982,TC004,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.777982,TC004,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.777982,TC004,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.777982,TC004,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.778263,TC005,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.778263,TC005,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.778263,TC005,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.778263,TC005,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.778263,TC005,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.778536,TC006,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.778536,TC006,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.778536,TC006,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.778536,TC006,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.778536,TC006,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.778894,TC007,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.778894,TC007,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.778894,TC007,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.778894,TC007,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.778894,TC007,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.779233,TC008,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.779233,TC008,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.779233,TC008,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.779233,TC008,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.779233,TC008,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.779593,TC009,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.779593,TC009,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.779593,TC009,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.779593,TC009,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.779593,TC009,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.779881,TC010,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.779881,TC010,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.779881,TC010,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.779881,TC010,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.779881,TC010,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.780243,TC011,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.780243,TC011,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.780243,TC011,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.780243,TC011,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.780243,TC011,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.780608,TC012,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.780608,TC012,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.780608,TC012,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.780608,TC012,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.780608,TC012,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.781026,TC013,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.781026,TC013,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.781026,TC013,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.781026,TC013,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.781026,TC013,Blind Spot Detection,impact,0.0,0.4,False
+2026-01-15T15:53:13.782021,TC014,E2E Latency,stability,0.0,15.0,True
+2026-01-15T15:53:13.782021,TC014,JSON Stability Rate,stability,100.0,99.0,True
+2026-01-15T15:53:13.782021,TC014,Zero-Anachronism Rate,trust,100.0,100.0,True
+2026-01-15T15:53:13.782021,TC014,Time-to-Insight Efficiency,impact,100.0,99.0,True
+2026-01-15T15:53:13.782021,TC014,Blind Spot Detection,impact,0.0,0.4,False

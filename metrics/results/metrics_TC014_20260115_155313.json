@@ -1,0 +1,93 @@
+{
+  "request_id": "TC014",
+  "timestamp": "2026-01-15T15:53:13.782021",
+  "metrics": [
+    {
+      "metric_name": "E2E Latency",
+      "tier": "stability",
+      "value": 0.0,
+      "target": 15.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.781754",
+      "request_id": "TC014",
+      "metadata": {
+        "unit": "seconds",
+        "start_time": "2026-01-15T15:53:13.781716",
+        "end_time": "2026-01-15T15:53:13.781726"
+      }
+    },
+    {
+      "metric_name": "JSON Stability Rate",
+      "tier": "stability",
+      "value": 100.0,
+      "target": 99.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.781775",
+      "request_id": "TC014",
+      "metadata": {
+        "total_validations": 3,
+        "successful_validations": 3,
+        "failed_validations": 0,
+        "unit": "percent"
+      }
+    },
+    {
+      "metric_name": "Zero-Anachronism Rate",
+      "tier": "trust",
+      "value": 100.0,
+      "target": 100.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.781875",
+      "request_id": "TC014",
+      "metadata": {
+        "total_news": 0,
+        "valid_news": 0,
+        "invalid_news": 0,
+        "note": "No news items to validate"
+      }
+    },
+    {
+      "metric_name": "Time-to-Insight Efficiency",
+      "tier": "impact",
+      "value": 100.0,
+      "target": 99.0,
+      "passed": true,
+      "timestamp": "2026-01-15T15:53:13.781964",
+      "request_id": "TC014",
+      "metadata": {
+        "ai_latency_seconds": 0.0,
+        "human_baseline_seconds": 1800,
+        "human_baseline_minutes": 30.0,
+        "time_saved_seconds": 1800.0,
+        "time_saved_minutes": 30.0,
+        "unit": "percent"
+      }
+    },
+    {
+      "metric_name": "Blind Spot Detection",
+      "tier": "impact",
+      "value": 0.0,
+      "target": 0.4,
+      "passed": false,
+      "timestamp": "2026-01-15T15:53:13.782000",
+      "request_id": "TC014",
+      "metadata": {
+        "label": "failure",
+        "description": "AI가 정답을 찾지 못함",
+        "user_belief_similarity": 0.5,
+        "ai_conclusion_similarity": 0.5,
+        "is_ai_correct": false,
+        "is_user_biased": false,
+        "user_belief": "장기적으로 반도체 업황이 좋아질 것 같아서 보유 중이다",
+        "ai_conclusion": "글로벌 시장 변동성 증가",
+        "ground_truth": "매수 시점 분석 결과, 적정한 밸류에이션에서 진입"
+      }
+    }
+  ],
+  "summary": {
+    "impact": 50.0,
+    "trust": 100.0,
+    "stability": 100.0,
+    "overall": 80.0
+  }
+}
