@@ -8,6 +8,9 @@ from curl_cffi import requests as curl_requests
 from langchain_core.messages import HumanMessage, SystemMessage
 
 from core.llm import get_solar_chat
+from langsmith import traceable
+from langsmith.run_helpers import get_current_run_tree
+from .judge import judge_n6_quality
 
 
 _TICKER_TOKEN_RE = re.compile(r"[A-Za-z0-9.\-]+")
@@ -77,6 +80,7 @@ def generate_llm_chart_analysis(payload: Dict[str, Any]) -> Optional[str]:
         return None
 
 
+@traceable(name="N6_Stock_Analyst")
 def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
     """
     Node6: 주식 기술적 분석
@@ -90,6 +94,17 @@ def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
     buy_date = state.get("layer2_buy_date")
     sell_date = state.get("layer2_sell_date")
     decision_basis = state.get("layer3_decision_basis")
+
+    run = get_current_run_tree()
+    if run:
+        run.add_metadata(
+            {
+                "ticker": stock_name,
+                "buy_date": buy_date,
+                "sell_date": sell_date,
+                "decision_basis": decision_basis,
+            }
+        )
 
     # 입력 검증
     if not stock_name or not buy_date or not sell_date:
@@ -122,16 +137,54 @@ def node6_stock_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
         if llm_analysis:
             analysis_result["stock_analysis"]["llm_chart_analysis"] = llm_analysis
 
+        try:
+            llm = get_solar_chat()
+            analysis_result["stock_analysis"]["judge_metrics"] = judge_n6_quality(
+                llm, analysis_result["stock_analysis"]
+            )
+        except Exception as exc:
+            analysis_result["stock_analysis"]["judge_metrics"] = {
+                "notes": f"judge_failed: {exc}"
+            }
+
         # 결과 검증
         from utils.validator import validate_node6
 
         if not validate_node6(analysis_result):
-            return {"n6_stock_analysis": fallback_result("분석 결과 검증에 실패했습니다.")}
+            result = {"n6_stock_analysis": fallback_result("분석 결과 검증에 실패했습니다.")}
+            if run:
+                run.add_outputs(result)
+            return result
 
-        return {"n6_stock_analysis": analysis_result}
+        try:
+            from metrics.n6_metrics import evaluate_n6_metrics, persist_n6_metrics
+            from metrics.n6_prompt_optimizer import apply_n6_prompt_optimization
+
+            report = evaluate_n6_metrics(analysis_result, state.get("request_id"))
+            analysis_result["stock_analysis"]["metrics_summary"] = report.get("summary", {})
+            persist_n6_metrics(report)
+            apply_n6_prompt_optimization(report)
+        except Exception as exc:
+            analysis_result["stock_analysis"]["metrics_summary"] = {
+                "error": f"n6 metrics failed: {exc}"
+            }
+
+        result = {"n6_stock_analysis": analysis_result}
+        if run:
+            run.add_metadata(
+                {
+                    "n6_metrics_summary": analysis_result["stock_analysis"].get("metrics_summary"),
+                    "n6_judge_metrics": analysis_result["stock_analysis"].get("judge_metrics"),
+                }
+            )
+            run.add_outputs(result)
+        return result
 
     except Exception as e:
-        return {"n6_stock_analysis": fallback_result(f"분석 중 오류 발생: {str(e)}")}
+        result = {"n6_stock_analysis": fallback_result(f"분석 중 오류 발생: {str(e)}")}
+        if run:
+            run.add_outputs(result)
+        return result
 
 
 
