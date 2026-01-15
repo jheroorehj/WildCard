@@ -259,8 +259,10 @@ class MetricsEvaluator:
         request_id: str
     ) -> Optional[MetricResult]:
         """Blind Spot Detection 평가"""
-        # 사용자 믿음 (layer3_decision_basis)
-        user_belief = golden_truth.get("input", {}).get("layer3_decision_basis", "")
+        # 사용자 믿음 - 새로운 형식: user_belief 필드 우선, 없으면 layer3_decision_basis
+        user_belief = golden_truth.get("user_belief", "")
+        if not user_belief:
+            user_belief = golden_truth.get("input", {}).get("layer3_decision_basis", "")
 
         # AI 결론 (root_causes에서 추출)
         ai_analysis = analysis_result.get("n8_loss_cause_analysis", {})

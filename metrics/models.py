@@ -35,12 +35,23 @@ class EvaluationReport(TypedDict):
     summary: Dict[str, float]          # Tier별 통과율 요약
 
 
+class GoldenTestInput(TypedDict):
+    """Golden Dataset 테스트 케이스 입력 (프론트엔드 형식 반영)"""
+    layer1_stock: str                  # 종목명
+    layer2_buy_date: str               # 거래시작일 (YYYY-MM-DD)
+    layer2_sell_date: str              # 거래종료일 (YYYY-MM-DD)
+    position_status: str               # 보유/매도 상태 ('holding' | 'sold')
+    layer3_decision_basis: str         # 투자 결정 근거 (쉼표로 구분)
+    patterns: List[str]                # 매매패턴 배열
+
+
 class GoldenTestCase(TypedDict):
     """Golden Dataset 테스트 케이스"""
     id: str                            # 테스트 케이스 ID (예: "TC001")
     scenario: str                      # 시나리오 유형
     description: str                   # 시나리오 설명
-    input: Dict[str, str]              # 입력 데이터 (layer1_stock, layer2_buy_date, etc.)
+    input: GoldenTestInput             # 입력 데이터 (프론트엔드 형식)
+    user_belief: str                   # 사용자 믿음 (layer3_decision_basis와 별도)
     ground_truth: Dict[str, Any]       # 정답 데이터
     user_belief_correct: bool          # 사용자 믿음의 정확성
     expected_blind_spot_score: float   # 예상 Blind Spot 점수
@@ -49,7 +60,36 @@ class GoldenTestCase(TypedDict):
 class GoldenDataset(TypedDict):
     """Golden Dataset 전체 구조"""
     version: str
+    generated_at: str
+    description: str
+    input_format: Dict[str, str]       # 입력 필드 설명
+    decision_options: List[str]        # 투자 결정 근거 옵션
+    trade_patterns: List[str]          # 매매패턴 옵션
     test_cases: List[GoldenTestCase]
+
+
+# 프론트엔드 상수 (constants.tsx와 동기화)
+DECISION_OPTIONS = [
+    "유튜브/인플루언서 추천",
+    "뉴스/미디어 보도",
+    "커뮤니티(종토방, 레딧 등)",
+    "지인/전문가 추천",
+    "차트 기술적 지표 분석",
+    "기업 재무제표 분석",
+    "단순 직감/감",
+    "FOMO (남들 다 사길래)",
+    "공시/공식 발표"
+]
+
+TRADE_PATTERNS = [
+    "분할 매수 (Scaling In)",
+    "분할 매도 (Scaling Out)",
+    "물타기 (단가 낮추기)",
+    "불타기 (단가 올리기)",
+    "손절매 (Stop Loss)",
+    "장기 보유 (Buy & Hold)",
+    "단기 스캘핑 (Scalping)"
+]
 
 
 # 메트릭별 목표치 상수
