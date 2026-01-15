@@ -1,6 +1,171 @@
-import React from 'react';
-import { AnalysisResult, Message, InvestmentFormData } from '../types';
-import { ICONS } from '../constants';
+import React, { useState } from 'react';
+import { AnalysisResult, Message, InvestmentFormData, RootCause, Evidence, N8LossCauseAnalysis } from '../types';
+import { ICONS, CAUSE_CATEGORY_META, IMPACT_LEVEL_META } from '../constants';
+
+// === 하위 호환성: 구버전 데이터 변환 ===
+const isLegacyFormat = (lossCause: any): boolean => {
+  if (!lossCause?.root_causes) return true;
+  if (lossCause.root_causes.length === 0) return false;
+  return typeof lossCause.root_causes[0] === 'string';
+};
+
+const normalizeLossCauseData = (lossCause: any): N8LossCauseAnalysis | null => {
+  if (!lossCause) return null;
+
+  // 새 형식이면 그대로 반환
+  if (!isLegacyFormat(lossCause)) {
+    return lossCause as N8LossCauseAnalysis;
+  }
+
+  // 구버전 형식 → 새 형식으로 변환
+  const legacyCauses = (lossCause.root_causes || []) as string[];
+  return {
+    loss_check: lossCause.loss_check || '',
+    loss_amount_pct: lossCause.loss_amount_pct || 'N/A',
+    one_line_summary: lossCause.one_line_summary || '',
+    root_causes: legacyCauses.map((text: string, idx: number) => ({
+      id: `RC${String(idx + 1).padStart(3, '0')}`,
+      category: 'internal' as const,
+      subcategory: 'judgment_error' as const,
+      title: text.slice(0, 20) + (text.length > 20 ? '...' : ''),
+      description: text,
+      impact_score: 5,
+      impact_level: 'medium' as const,
+      evidence: [],
+      timeline_relevance: 'throughout' as const
+    })),
+    cause_breakdown: { internal_ratio: 50, external_ratio: 50 },
+    detailed_explanation: lossCause.detailed_explanation || '',
+    confidence_level: 'medium' as const
+  };
+};
+
+// === 서브 컴포넌트: 내부/외부 비중 바 ===
+const CauseBreakdownBar: React.FC<{ internal: number; external: number }> = ({ internal, external }) => (
+  <div className="my-4">
+    <div className="flex text-[10px] mb-1.5 font-medium">
+      <span className="text-amber-400 flex items-center gap-1">
+        {ICONS.User}
+        <span>내부 요인 {internal}%</span>
+      </span>
+      <span className="flex-1" />
+      <span className="text-indigo-400 flex items-center gap-1">
+        <span>외부 요인 {external}%</span>
+        {ICONS.Globe}
+      </span>
+    </div>
+    <div className="h-2 rounded-full overflow-hidden flex bg-slate-800">
+      <div
+        className="bg-gradient-to-r from-amber-600 to-amber-400 transition-all duration-500"
+        style={{ width: `${internal}%` }}
+      />
+      <div
+        className="bg-gradient-to-r from-indigo-400 to-indigo-600 transition-all duration-500"
+        style={{ width: `${external}%` }}
+      />
+    </div>
+  </div>
+);
+
+// === 서브 컴포넌트: 영향도 배지 ===
+const ImpactBadge: React.FC<{ score: number; level: string }> = ({ score, level }) => {
+  const meta = IMPACT_LEVEL_META[level as keyof typeof IMPACT_LEVEL_META] || IMPACT_LEVEL_META.medium;
+  return (
+    <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg ${meta.bgClass} border ${meta.borderClass}`}>
+      <div className="flex gap-0.5">
+        {[...Array(10)].map((_, i) => (
+          <div
+            key={i}
+            className={`w-0.5 h-2.5 rounded-sm transition-all ${
+              i < score ? meta.textClass.replace('text-', 'bg-') : 'bg-slate-700'
+            }`}
+          />
+        ))}
+      </div>
+      <span className={`${meta.textClass} text-[10px] font-bold`}>
+        {score}/10
+      </span>
+    </div>
+  );
+};
+
+// === 서브 컴포넌트: 근거 아이템 ===
+const EvidenceItem: React.FC<{ evidence: Evidence }> = ({ evidence }) => {
+  const sourceLabels = { n6: '기술분석', n7: '뉴스분석', user_input: '사용자입력' };
+  const sourceColors = { n6: 'text-blue-400', n7: 'text-purple-400', user_input: 'text-green-400' };
+
+  return (
+    <div className="flex items-start gap-2 text-[10px] bg-slate-800/50 rounded-lg p-2">
+      <span className={`font-bold shrink-0 ${sourceColors[evidence.source]}`}>
+        [{sourceLabels[evidence.source]}]
+      </span>
+      <div className="flex-1">
+        <span className="text-slate-200 font-medium">{evidence.data_point}</span>
+        <span className="text-slate-500 mx-1">→</span>
+        <span className="text-slate-400">{evidence.interpretation}</span>
+      </div>
+    </div>
+  );
+};
+
+// === 서브 컴포넌트: 원인 카드 ===
+const CauseCard: React.FC<{ cause: RootCause; index: number }> = ({ cause, index }) => {
+  const [showEvidence, setShowEvidence] = useState(false);
+
+  const categoryMeta = CAUSE_CATEGORY_META[cause.category];
+  const subcategoryMeta = categoryMeta?.subcategories[cause.subcategory as keyof typeof categoryMeta.subcategories];
+
+  const borderColor = cause.category === 'internal' ? 'border-amber-500/30' : 'border-indigo-500/30';
+  const bgColor = cause.category === 'internal' ? 'bg-amber-500/5' : 'bg-indigo-500/5';
+  const accentColor = cause.category === 'internal' ? 'text-amber-400' : 'text-indigo-400';
+  const iconKey = subcategoryMeta?.icon as keyof typeof ICONS;
+
+  return (
+    <div className={`p-3 rounded-2xl border ${borderColor} ${bgColor} space-y-2`}>
+      {/* 상단: 제목 + 영향도 */}
+      <div className="flex justify-between items-start gap-2">
+        <div className="flex items-center gap-2 flex-1 min-w-0">
+          <span className={`shrink-0 ${accentColor}`}>
+            {iconKey && ICONS[iconKey] ? ICONS[iconKey] : ICONS.AlertCircle}
+          </span>
+          <div className="min-w-0">
+            <span className={`text-[10px] ${accentColor} font-medium`}>
+              {subcategoryMeta?.label || cause.subcategory}
+            </span>
+            <h6 className="text-sm font-bold text-white">{cause.title}</h6>
+          </div>
+        </div>
+        <ImpactBadge score={cause.impact_score} level={cause.impact_level} />
+      </div>
+
+      {/* 설명 */}
+      <p className="text-[11px] text-slate-300 leading-relaxed">{cause.description}</p>
+
+      {/* 근거 데이터 토글 */}
+      {cause.evidence && cause.evidence.length > 0 && (
+        <div>
+          <button
+            onClick={() => setShowEvidence(!showEvidence)}
+            className={`flex items-center gap-1 text-[10px] font-medium transition-colors ${
+              showEvidence ? accentColor : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            {showEvidence ? ICONS.ChevronUp : ICONS.ChevronDown}
+            <span>근거 데이터 {cause.evidence.length}건</span>
+          </button>
+
+          {showEvidence && (
+            <div className="mt-2 space-y-1.5 animate-in fade-in slide-in-from-top-1 duration-200">
+              {cause.evidence.map((ev, i) => (
+                <EvidenceItem key={i} evidence={ev} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
 
 interface AnalysisViewProps {
   analysis: AnalysisResult | null;
@@ -35,26 +200,22 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 }) => {
   // Solar API data mapping
   const report = analysis?.n10_loss_review_report;
-  const lossCause = analysis?.n8_loss_cause_analysis;
+  const lossCauseRaw = analysis?.n8_loss_cause_analysis;
   const marketContext = analysis?.n8_market_context_analysis;
   const pattern = analysis?.learning_pattern_analysis;
   const recommendation = pattern?.learning_recommendation;
 
-  const lossAnalysisTitle =
-    lossCause?.one_line_summary || lossCause?.loss_check || '손실 원인 분석';
-  const lossAnalysisDetails = [
-    ...(lossCause?.root_causes || []),
-    lossCause?.detailed_explanation || ''
-  ].filter(Boolean);
-  const lossAnalysis = lossAnalysisDetails.join('\n\n');
+  // 손실 원인 분석 데이터 정규화 (하위 호환성)
+  const lossCause = normalizeLossCauseData(lossCauseRaw);
+
+  // 카테고리별 원인 분류
+  const internalCauses = lossCause?.root_causes?.filter(c => c.category === 'internal') || [];
+  const externalCauses = lossCause?.root_causes?.filter(c => c.category === 'external') || [];
 
   const marketAnalysisTitle =
     marketContext?.market_situation_analysis || '시장 상황 분석';
-  const marketAnalysisDetails = [
-    ...(marketContext?.news_at_loss_time || []),
-    ...(marketContext?.related_news || [])
-  ].filter(Boolean);
-  const marketAnalysis = marketAnalysisDetails.join('\n\n');
+  const marketAnalysis =
+    marketContext?.market_situation_analysis || '';
 
   const patternAnalysisTitle = pattern?.pattern_summary || '투자 패턴 분석';
   const patternAnalysisDetails = [
@@ -80,6 +241,9 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
     '당시 시장 상황을 더 자세히 알려주세요.',
     '비슷한 실수를 방지하려면?'
   ];
+  const newsSummaries = analysis?.n7_news_analysis?.news_context?.news_summaries || [];
+  const newsHeadlines = analysis?.n7_news_analysis?.news_context?.key_headlines || [];
+  const newsItems = (newsSummaries.length ? newsSummaries : newsHeadlines).slice(0, 3);
 
   return (
     <div className="h-screen max-w-md mx-auto bg-slate-950 flex flex-col shadow-2xl relative overflow-hidden">
@@ -98,28 +262,100 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-5 space-y-4 pt-4 pb-12 scroll-smooth custom-scrollbar relative z-10">
         {analysis && (
           <div className="space-y-4">
-            {/* 손실 원인 분석 */}
+            {/* 손실 원인 분석 (고도화) */}
             <section className="bg-slate-900/40 border border-amber-500/20 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 relative">
+              {/* 헤더 */}
               <div className="flex justify-between items-start mb-3">
                 <div className="flex items-center gap-2.5">
                   <div className="text-amber-400 shrink-0">{ICONS.AlertCircle}</div>
                   <h4 className="text-amber-300 text-[11px] font-black uppercase tracking-tight">손실 원인 분석</h4>
+                  {lossCause?.loss_amount_pct && lossCause.loss_amount_pct !== 'N/A' && (
+                    <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-[10px] font-bold rounded-full">
+                      {lossCause.loss_amount_pct}
+                    </span>
+                  )}
                 </div>
-                <button 
+                <button
                   onClick={() => toggleExpand('lossReason')}
                   className={`p-1 rounded-md transition-colors ${expanded.lossReason ? 'bg-amber-500/20 text-amber-400' : 'text-slate-600 hover:text-amber-400 hover:bg-white/5'}`}
                 >
                   {ICONS.Search}
                 </button>
               </div>
-              <div className="space-y-2">
-                <h5 className="text-base font-bold text-white tracking-tight">{lossAnalysisTitle}</h5>
-                {expanded.lossReason && (
-                  <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300">
-                    {lossAnalysis}
-                  </p>
-                )}
-              </div>
+
+              {/* 한 줄 요약 */}
+              <h5 className="text-base font-bold text-white tracking-tight mb-2">
+                {lossCause?.one_line_summary || lossCause?.loss_check || '손실 원인 분석'}
+              </h5>
+
+              {/* 내부/외부 비중 바 */}
+              {lossCause?.cause_breakdown && (
+                <CauseBreakdownBar
+                  internal={lossCause.cause_breakdown.internal_ratio}
+                  external={lossCause.cause_breakdown.external_ratio}
+                />
+              )}
+
+              {/* 확장 시 상세 내용 */}
+              {expanded.lossReason && lossCause && (
+                <div className="space-y-4 animate-in fade-in slide-in-from-top-1 duration-300">
+                  {/* 내부 요인 그룹 */}
+                  {internalCauses.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-amber-400">
+                        {ICONS.User}
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                          내부 요인 ({internalCauses.length})
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {internalCauses.map((cause, idx) => (
+                          <CauseCard key={cause.id} cause={cause} index={idx} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 외부 요인 그룹 */}
+                  {externalCauses.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-indigo-400">
+                        {ICONS.Globe}
+                        <span className="text-[10px] font-bold uppercase tracking-wider">
+                          외부 요인 ({externalCauses.length})
+                        </span>
+                      </div>
+                      <div className="space-y-2">
+                        {externalCauses.map((cause, idx) => (
+                          <CauseCard key={cause.id} cause={cause} index={idx} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 상세 설명 */}
+                  {lossCause.detailed_explanation && (
+                    <div className="pt-3 border-t border-slate-700/50">
+                      <p className="text-[11px] text-slate-400 leading-relaxed">
+                        {lossCause.detailed_explanation}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 신뢰도 표시 */}
+                  {lossCause.confidence_level && (
+                    <div className="flex justify-end">
+                      <span className={`text-[9px] px-2 py-0.5 rounded-full ${
+                        lossCause.confidence_level === 'high' ? 'bg-green-500/20 text-green-400' :
+                        lossCause.confidence_level === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                        'bg-slate-500/20 text-slate-400'
+                      }`}>
+                        분석 신뢰도: {lossCause.confidence_level === 'high' ? '높음' : lossCause.confidence_level === 'medium' ? '보통' : '낮음'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
             </section>
 
             {/* 시장 상황 분석 */}
@@ -139,9 +375,34 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
               <div className="space-y-2">
                 <h5 className="text-base font-bold text-white tracking-tight">{marketAnalysisTitle}</h5>
                 {expanded.marketAnalysis && (
-                  <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300">
-                    {marketAnalysis}
-                  </p>
+                  <>
+                    {newsItems.length ? (
+                      <div className="space-y-2 pt-3">
+                        {newsItems.map((item, idx) => (
+                          <a
+                            key={idx}
+                            href={item.link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="block rounded-xl border border-white/5 bg-slate-950/40 p-3 hover:bg-slate-900/60 transition-colors"
+                          >
+                            <div className="text-[12px] font-semibold text-slate-200">
+                              {item.title || `News ${idx + 1}`}
+                            </div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">
+                              {item.source ? `${item.source} - ` : ''}
+                              {item.date || 'Date unavailable'}
+                            </div>
+                            {'summary' in item && item.summary ? (
+                              <p className="text-[12px] text-slate-300 leading-relaxed mt-1 whitespace-pre-wrap">
+                                {item.summary}
+                              </p>
+                            ) : null}
+                          </a>
+                        ))}
+                      </div>
+                    ) : null}
+                  </>
                 )}
               </div>
             </section>

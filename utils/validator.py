@@ -186,22 +186,121 @@ def validate_node7(data: Dict[str, Any]) -> bool:
 
 def validate_node8(data: Dict[str, Any]) -> bool:
     """
-    Node8 JSON schema validator (loss analyst)
+    Node8 JSON schema validator (loss analyst) - 고도화 버전
+    n8_loss_cause_analysis: 새로운 구조화된 스키마
+    n8_market_context_analysis, n9_input: 기존 스키마 유지
     """
+    # === 허용된 값 정의 ===
+    allowed_categories = {"internal", "external"}
+    allowed_internal_sub = {
+        "judgment_error", "emotional_trading", "timing_mistake",
+        "risk_management", "insufficient_research"
+    }
+    allowed_external_sub = {
+        "market_condition", "company_news", "macro_event",
+        "sector_rotation", "unexpected_event"
+    }
+    allowed_impact_level = {"low", "medium", "high", "critical"}
+    allowed_timeline = {"before_buy", "during_hold", "at_sell", "throughout"}
+    allowed_evidence_source = {"n6", "n7", "user_input"}
+    allowed_evidence_type = {"price", "indicator", "news", "sentiment", "user_decision"}
+    allowed_confidence = {"low", "medium", "high"}
+
+    # === n8_loss_cause_analysis 검증 ===
     loss_cause = data.get("n8_loss_cause_analysis")
     if not isinstance(loss_cause, dict):
         return False
 
-    for key in ("loss_check", "one_line_summary", "detailed_explanation"):
+    # 기본 문자열 필드 검증
+    for key in ("loss_check", "loss_amount_pct", "one_line_summary", "detailed_explanation"):
         if not isinstance(loss_cause.get(key), str):
             return False
 
+    # confidence_level 검증
+    if loss_cause.get("confidence_level") not in allowed_confidence:
+        return False
+
+    # cause_breakdown 검증
+    breakdown = loss_cause.get("cause_breakdown")
+    if not isinstance(breakdown, dict):
+        return False
+    internal_ratio = breakdown.get("internal_ratio")
+    external_ratio = breakdown.get("external_ratio")
+    if not isinstance(internal_ratio, (int, float)):
+        return False
+    if not isinstance(external_ratio, (int, float)):
+        return False
+    if abs((internal_ratio + external_ratio) - 100) > 1:  # 허용 오차 1%
+        return False
+
+    # root_causes 검증 (새로운 구조)
     root_causes = loss_cause.get("root_causes")
     if not isinstance(root_causes, list):
         return False
-    if any(not isinstance(item, str) for item in root_causes):
+    if len(root_causes) < 2:  # 최소 2개 이상
         return False
 
+    for cause in root_causes:
+        if not isinstance(cause, dict):
+            return False
+
+        # id 검증
+        if not isinstance(cause.get("id"), str):
+            return False
+
+        # category 검증
+        category = cause.get("category")
+        if category not in allowed_categories:
+            return False
+
+        # subcategory 검증 (category에 따라 다른 허용값)
+        subcategory = cause.get("subcategory")
+        if category == "internal":
+            if subcategory not in allowed_internal_sub:
+                return False
+        else:
+            if subcategory not in allowed_external_sub:
+                return False
+
+        # 문자열 필드 검증
+        for key in ("title", "description"):
+            if not isinstance(cause.get(key), str):
+                return False
+
+        # impact_score 검증 (1-10)
+        impact_score = cause.get("impact_score")
+        if not isinstance(impact_score, (int, float)):
+            return False
+        if not (1 <= impact_score <= 10):
+            return False
+
+        # impact_level 검증
+        if cause.get("impact_level") not in allowed_impact_level:
+            return False
+
+        # timeline_relevance 검증
+        if cause.get("timeline_relevance") not in allowed_timeline:
+            return False
+
+        # evidence 검증
+        evidence_list = cause.get("evidence")
+        if not isinstance(evidence_list, list):
+            return False
+        if len(evidence_list) < 1:  # 최소 1개 이상
+            return False
+
+        for ev in evidence_list:
+            if not isinstance(ev, dict):
+                return False
+            if ev.get("source") not in allowed_evidence_source:
+                return False
+            if ev.get("type") not in allowed_evidence_type:
+                return False
+            for k in ("data_point", "interpretation"):
+                if not isinstance(ev.get(k), str):
+                    return False
+
+    # === n8_market_context_analysis 검증 (기존 유지) ===
     market_context = data.get("n8_market_context_analysis")
     if not isinstance(market_context, dict):
         return False

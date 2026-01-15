@@ -52,10 +52,53 @@ def node8_loss_analyst(state: Dict[str, Any]) -> Dict[str, Any]:
 def _fallback(reason: str) -> Dict[str, Any]:
     return {
         "n8_loss_cause_analysis": {
-            "loss_check": f"Failed to generate loss analysis. ({reason})",
-            "root_causes": [],
-            "one_line_summary": "",
-            "detailed_explanation": "",
+            "loss_check": f"분석 생성 실패. ({reason})",
+            "loss_amount_pct": "N/A",
+            "one_line_summary": "분석을 완료할 수 없습니다.",
+            "root_causes": [
+                {
+                    "id": "RC001",
+                    "category": "internal",
+                    "subcategory": "judgment_error",
+                    "title": "분석 불가",
+                    "description": f"손실 원인 분석을 완료할 수 없습니다. 사유: {reason}",
+                    "impact_score": 5,
+                    "impact_level": "medium",
+                    "evidence": [
+                        {
+                            "source": "n6",
+                            "type": "price",
+                            "data_point": "데이터 없음",
+                            "interpretation": "분석에 필요한 데이터를 수집할 수 없습니다."
+                        }
+                    ],
+                    "timeline_relevance": "throughout"
+                },
+                {
+                    "id": "RC002",
+                    "category": "external",
+                    "subcategory": "unexpected_event",
+                    "title": "데이터 부족",
+                    "description": "충분한 시장 데이터를 확보하지 못했습니다.",
+                    "impact_score": 5,
+                    "impact_level": "medium",
+                    "evidence": [
+                        {
+                            "source": "n7",
+                            "type": "news",
+                            "data_point": "데이터 없음",
+                            "interpretation": "관련 뉴스 데이터를 수집할 수 없습니다."
+                        }
+                    ],
+                    "timeline_relevance": "throughout"
+                }
+            ],
+            "cause_breakdown": {
+                "internal_ratio": 50,
+                "external_ratio": 50
+            },
+            "detailed_explanation": f"손실 원인 분석을 완료할 수 없습니다. 사유: {reason}. 다시 시도해 주세요.",
+            "confidence_level": "low",
         },
         "n8_market_context_analysis": {
             "news_at_loss_time": [],
