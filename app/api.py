@@ -16,7 +16,7 @@ from workflow.graph import build_graph
 from app.service.embedding_service import EmbeddingService
 from core.db import get_chroma_collection, get_supabase_client
 from core.llm import get_solar_chat
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from utils.json_parser import parse_json
 from app.quiz_prompt import QUIZ_SYSTEM_PROMPT
 
@@ -218,11 +218,30 @@ async def chat(req: ChatRequest) -> Dict[str, Any]:
     context = "\n".join([f"{m.role}: {m.content}" for m in req.history][-10:])
     state = {"user_message": req.message, "context": context}
     result = node9_fallback_handler(state)
-    message = ""
-    if isinstance(result, dict):
-        analysis = result.get("learning_pattern_analysis", {})
-        if isinstance(analysis, dict):
-            message = analysis.get("pattern_summary", "")
+
+    llm = get_solar_chat()
+    messages: List[Any] = [
+        SystemMessage(
+            content=(
+                "You are an investment learning assistant. "
+                "Answer the user's question in Korean in about two sentences. "
+                "Keep it concise and avoid buy/sell recommendations."
+            )
+        )
+    ]
+    for item in req.history[-10:]:
+        if item.role == "assistant":
+            messages.append(AIMessage(content=item.content))
+        else:
+            messages.append(HumanMessage(content=item.content))
+    messages.append(HumanMessage(content=req.message))
+
+    try:
+        response = llm.invoke(messages)
+        message = response.content if isinstance(response.content, str) else str(response.content)
+    except Exception as exc:
+        message = f"답변을 생성하지 못했습니다. ({exc})"
+
     return {"message": message, "raw": result}
 
 

@@ -680,37 +680,9 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                   </div>
                   <div className="space-y-2">
                     {expandedChat[i] ? (
-                      msg.raw?.learning_pattern_analysis ? (
-                        <div className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300 space-y-2">
-                          <p className="font-semibold">
-                            {msg.raw.learning_pattern_analysis.pattern_summary}
-                          </p>
-                          <div className="space-y-1">
-                            <p className="text-slate-400">강점</p>
-                            {msg.raw.learning_pattern_analysis.pattern_strengths.map((item, idx) => (
-                              <div key={idx}>- {item}</div>
-                            ))}
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-slate-400">약점</p>
-                            {msg.raw.learning_pattern_analysis.pattern_weaknesses.map((item, idx) => (
-                              <div key={idx}>- {item}</div>
-                            ))}
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-slate-400">학습 추천</p>
-                            {msg.raw.learning_pattern_analysis.learning_recommendation.learning_steps.map(
-                              (item, idx) => (
-                                <div key={idx}>- {item}</div>
-                              )
-                            )}
-                          </div>
-                        </div>
-                      ) : (
-                        <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300">
-                          {msg.content}
-                        </p>
-                      )
+                      <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300">
+                        {msg.content}
+                      </p>
                     ) : (
                       <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap">
                         {msg.content}
