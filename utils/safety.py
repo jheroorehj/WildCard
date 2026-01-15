@@ -4,14 +4,14 @@ from typing import List
 _STRONG_ADVICE_PATTERNS: List[str] = [
     r"(매수|매도|투자)\s*(하세요|해라|하는게|하는 것이|하는\s*편)",
     r"(사라|팔아라|사세요|파세요)",
-    r"(수익|손실)\s*(전망|예측)",
-    r"(목표가|손절|익절)",
     r"(진입|청산)\s*(하세요|해라|하라)",
+    r"지금\s*(매수|매도|사|팔)",
+    r"(추천\s*종목|유망\s*종목)",
 ]
 
 _SOFT_ADVICE_TERMS: List[str] = [
-    r"조언",
-    r"권고",
+    r"투자\s*조언\s*드",
+    r"투자를\s*권고",
 ]
 
 _NEGATION_HINTS: List[str] = [

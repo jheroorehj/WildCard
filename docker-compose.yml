@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  # 1. Backend Service
+  backend:
+    container_name: wildcard-backend
+    build:
+      context: .
+      target: backend  # Dockerfile의 AS backend 부분을 사용
+    ports:
+      - "8000:8000"    # 로컬 8000 -> 컨테이너 8000 연결
+    env_file:
+      - .env.local           # .env 파일의 변수들을 컨테이너에 주입 + [수정] .env 대신 .env.local을 바라보도록 변경
+    volumes:
+      - ./:/app        # (선택사항) 코드 수정 시 바로 반영되도록 로컬 폴더 연결
+    restart: always
+
+  # 2. Frontend Service
+  frontend:
+    container_name: wildcard-frontend
+    build:
+      context: .
+      target: frontend # Dockerfile의 AS frontend 부분을 사용
+      args:
+        # 빈 문자열로 설정하면 window.location.origin을 사용 (Nginx 프록시 경유)
+        VITE_API_BASE_URL: ""
+    ports:
+      - "80:80"        # 로컬 80 -> 컨테이너 80 (Nginx) 연결
+    depends_on:
+      - backend
+    restart: always
