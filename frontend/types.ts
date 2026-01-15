@@ -232,6 +232,18 @@ export interface AnalysisResult {
   n7_news_analysis?: N7NewsAnalysis;
 }
 
+export interface QuizOption {
+  text: string;
+  solution?: string;
+}
+
+export interface Quiz {
+  question: string;
+  type: 'standard' | 'personality';
+  options: QuizOption[];
+  correctAnswerIndex?: number;
+}
+
 export interface Message {
   role: 'user' | 'assistant';
   content: string;

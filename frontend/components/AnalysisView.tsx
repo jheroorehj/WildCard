@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 import React, { useState } from 'react';
 import { AnalysisResult, Message, InvestmentFormData, RootCause, Evidence, N8LossCauseAnalysis } from '../types';
 import { ICONS, CAUSE_CATEGORY_META, IMPACT_LEVEL_META } from '../constants';
@@ -166,6 +167,12 @@ const CauseCard: React.FC<{ cause: RootCause; index: number }> = ({ cause, index
     </div>
   );
 };
+=======
+import React, { useEffect, useState } from 'react';
+import { AnalysisResult, Message, InvestmentFormData, Quiz } from '../types';
+import { ICONS } from '../constants';
+import { generateInvestmentQuiz } from '../services/solarService';
+>>>>>>> Stashed changes
 
 interface AnalysisViewProps {
   analysis: AnalysisResult | null;
@@ -198,6 +205,53 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   setView,
   formData
 }) => {
+  const [quizOpen, setQuizOpen] = useState(false);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
+  const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+  const [quizLoading, setQuizLoading] = useState(false);
+  const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
+  const [quizFinished, setQuizFinished] = useState(false);
+
+  useEffect(() => {
+    setQuizOpen(false);
+    setQuizzes([]);
+    setCurrentQuizIndex(0);
+    setSelectedOptionIndex(null);
+    setQuizFinished(false);
+  }, [analysis]);
+
+  const handleToggleQuiz = async () => {
+    if (!analysis) return;
+    if (!quizOpen && quizzes.length == 0) {
+      setQuizLoading(true);
+      setQuizOpen(true);
+      try {
+        const generated = await generateInvestmentQuiz(analysis);
+        setQuizzes(generated);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setQuizLoading(false);
+      }
+      return;
+    }
+    setQuizOpen(prev => !prev);
+  };
+
+  const handleQuizSelect = (index: number) => {
+    if (selectedOptionIndex != null) return;
+    setSelectedOptionIndex(index);
+  };
+
+  const nextQuiz = () => {
+    if (currentQuizIndex < quizzes.length - 1) {
+      setCurrentQuizIndex(prev => prev + 1);
+      setSelectedOptionIndex(null);
+    } else {
+      setQuizFinished(true);
+    }
+  };
+
   // Solar API data mapping
   const report = analysis?.n10_loss_review_report;
   const lossCauseRaw = analysis?.n8_loss_cause_analysis;
@@ -438,12 +492,20 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                   <div className="text-white shrink-0">{ICONS.Lightbulb}</div>
                   <h4 className="text-white text-[11px] font-black uppercase tracking-tight">맞춤형 투자 학습 경로</h4>
                 </div>
-                <button 
-                  onClick={() => toggleExpand('learningPath')}
-                  className={`p-1 rounded-md transition-colors ${expanded.learningPath ? 'bg-white/20 text-white' : 'text-slate-600 hover:text-white hover:bg-white/5'}`}
-                >
-                  {ICONS.Search}
-                </button>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={handleToggleQuiz}
+                    className={`p-1 rounded-md transition-colors ${quizOpen ? 'bg-blue-500/20 text-blue-400' : 'text-slate-600 hover:text-blue-400 hover:bg-white/5'}`}
+                  >
+                    {ICONS.HelpCircle}
+                  </button>
+                  <button 
+                    onClick={() => toggleExpand('learningPath')}
+                    className={`p-1 rounded-md transition-colors ${expanded.learningPath ? 'bg-white/20 text-white' : 'text-slate-600 hover:text-white hover:bg-white/5'}`}
+                  >
+                    {ICONS.Search}
+                  </button>
+                </div>
               </div>
               <div className="space-y-3">
                 <h5 className="text-base font-bold text-white tracking-tight">{learningPath.title}</h5>
@@ -462,6 +524,114 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 )}
               </div>
             </section>
+
+
+              {quizOpen && (
+                <div className="mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 bg-blue-500/20 text-blue-400 text-[8px] font-black rounded uppercase tracking-tighter">AI 퀴즈</span>
+                      <p className="text-[10px] font-bold text-slate-500">자가 점검 ({currentQuizIndex + 1}/3)</p>
+                    </div>
+                    {quizFinished && (
+                      <button
+                        onClick={() => {
+                          setQuizFinished(false);
+                          setCurrentQuizIndex(0);
+                          setSelectedOptionIndex(null);
+                        }}
+                        className="text-[9px] font-bold text-blue-400 hover:underline"
+                      >
+                        다시 하기
+                      </button>
+                    )}
+                  </div>
+
+                  {quizLoading ? (
+                    <div className="py-8 flex flex-col items-center justify-center gap-3">
+                      <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-[10px] text-slate-500 font-medium">퀴즈 생성 중...</p>
+                    </div>
+                  ) : quizzes.length > 0 && !quizFinished ? (
+                    <div className="space-y-4">
+                      <p className="text-sm font-bold text-slate-100 leading-snug">{quizzes[currentQuizIndex].question}</p>
+                      <div className="grid gap-2">
+                        {quizzes[currentQuizIndex].options.map((option, idx) => {
+                          const isSelected = selectedOptionIndex === idx;
+                          const isCorrect = quizzes[currentQuizIndex].correctAnswerIndex === idx;
+                          const showResult = selectedOptionIndex !== null;
+                          const isPersonality = quizzes[currentQuizIndex].type === 'personality';
+
+                          let variantClass = "bg-slate-800/50 border-slate-700 text-slate-400 hover:border-slate-500";
+                          if (showResult) {
+                            if (isPersonality) {
+                              variantClass = isSelected ? "bg-blue-600/20 border-blue-500 text-blue-300 shadow-lg" : "opacity-50 border-slate-800 text-slate-600";
+                            } else {
+                              if (isCorrect) variantClass = "bg-emerald-600/20 border-emerald-500 text-emerald-400 shadow-lg";
+                              else if (isSelected) variantClass = "bg-red-600/20 border-red-500 text-red-400";
+                              else variantClass = "opacity-30 border-slate-800 text-slate-600";
+                            }
+                          }
+
+                          return (
+                            <button
+                              key={idx}
+                              onClick={() => handleQuizSelect(idx)}
+                              disabled={showResult}
+                              className={`w-full text-left p-4 rounded-2xl border text-xs font-bold transition-all ${variantClass}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span>{option.text}</span>
+                                {showResult && !isPersonality && isCorrect && <span className="text-emerald-500">{ICONS.Check}</span>}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {selectedOptionIndex !== null && (
+                        <div className="mt-4 animate-in fade-in slide-in-from-bottom-2">
+                          {quizzes[currentQuizIndex].type === 'personality' ? (
+                            <div className="bg-blue-500/10 border-l-2 border-blue-500 p-4 rounded-r-2xl">
+                              <p className="text-[11px] text-blue-300 leading-relaxed font-medium">
+                                <span className="font-black">해석:</span> {quizzes[currentQuizIndex].options[selectedOptionIndex].solution}
+                              </p>
+                            </div>
+                          ) : (
+                            <div className={`p-4 rounded-2xl ${selectedOptionIndex === quizzes[currentQuizIndex].correctAnswerIndex ? 'bg-emerald-500/10 text-emerald-400' : 'bg-red-500/10 text-red-400'}`}>
+                              <p className="text-[11px] font-bold">
+                                {selectedOptionIndex === quizzes[currentQuizIndex].correctAnswerIndex ? '정답입니다.' : '정답이 아니에요. 분석 내용을 다시 보고 도전해 보세요.'}
+                              </p>
+                            </div>
+                          )}
+                          <button
+                            onClick={nextQuiz}
+                            className="w-full mt-4 bg-slate-800 hover:bg-slate-700 text-white py-3 rounded-2xl font-black text-xs transition-all flex items-center justify-center gap-2"
+                          >
+                            {currentQuizIndex === quizzes.length - 1 ? '끝내기' : '다음'} {ICONS.ArrowRight}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ) : quizFinished ? (
+                    <div className="py-6 text-center space-y-4">
+                      <div className="w-12 h-12 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto text-blue-500 animate-bounce">
+                        {ICONS.Check}
+                      </div>
+                      <h6 className="text-base font-black text-white">퀴즈 완료!</h6>
+                      <p className="text-[11px] text-slate-500 font-medium px-4">
+                        핵심 내용을 확인했어요. 다음 거래에 체크리스트를 적용해 보세요.
+                      </p>
+                      <button
+                        onClick={() => setQuizOpen(false)}
+                        className="bg-blue-600 text-white px-6 py-2.5 rounded-xl font-bold text-xs shadow-lg shadow-blue-600/30"
+                      >
+                        닫기
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              )}
 
             {/* 행동 강령 (Behavioral Guide) */}
             <div className="px-3 py-3 border-l-2 border-emerald-500/50 bg-emerald-500/5 rounded-r-xl"><p className="text-emerald-400/90 text-[11px] italic font-medium">"{behavioralGuide}"</p></div>

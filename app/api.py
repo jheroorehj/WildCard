@@ -14,6 +14,10 @@ from N9_Fallback_Handler.n9 import node9_fallback_handler
 from workflow.graph import build_graph
 from app.service.embedding_service import EmbeddingService
 from core.db import get_chroma_collection, get_supabase_client
+from core.llm import get_solar_chat
+from langchain_core.messages import HumanMessage, SystemMessage
+from utils.json_parser import parse_json
+from app.quiz_prompt import QUIZ_SYSTEM_PROMPT
 
 
 class AnalyzeRequest(BaseModel):
@@ -33,6 +37,10 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     history: List[ChatMessage] = []
     message: str
+
+
+class QuizRequest(BaseModel):
+    learning_pattern_analysis: Dict[str, Any]
 
 
 app = FastAPI(title="WildCard API", version="0.1.0")
@@ -191,3 +199,101 @@ async def chat(req: ChatRequest) -> Dict[str, Any]:
         if isinstance(analysis, dict):
             message = analysis.get("pattern_summary", "")
     return {"message": message, "raw": result}
+
+
+@app.post("/v1/quiz")
+async def quiz(req: QuizRequest) -> Dict[str, Any]:
+    payload = {
+        "learning_pattern_analysis": req.learning_pattern_analysis,
+    }
+    llm = get_solar_chat()
+    messages = [
+        SystemMessage(content=QUIZ_SYSTEM_PROMPT),
+        HumanMessage(content=f"입력을 기반으로 JSON만 출력하세요.\n{payload}"),
+    ]
+
+    try:
+        response = llm.invoke(messages)
+        raw = response.content if isinstance(response.content, str) else str(response.content)
+    except Exception as exc:
+        return _fallback_quiz(f"LLM 호출 실패: {exc}")
+
+    parsed = parse_json(raw)
+    if not isinstance(parsed, dict):
+        return _fallback_quiz("JSON 파싱 실패")
+
+    if not _is_valid_quiz(parsed):
+        return _fallback_quiz("출력 스키마 검증 실패")
+
+    return parsed
+
+
+def _fallback_quiz(reason: str) -> Dict[str, Any]:
+    return {
+        "quiz_set": {
+            "quiz_purpose": f"학습 점검 (오류: {reason})",
+            "quizzes": [
+                {
+                    "quiz_id": "Q1",
+                    "quiz_type": "multiple_choice",
+                    "question": "가장 중요한 손실 원인은 무엇이었나요?",
+                    "options": [{"text": "정보 검증 부족"}, {"text": "과도한 자신감"}, {"text": "추세 오판"}, {"text": "손절 규칙 부재"}],
+                    "has_fixed_answer": True,
+                    "correct_answer_index": 0,
+                },
+                {
+                    "quiz_id": "Q2",
+                    "quiz_type": "multiple_choice",
+                    "question": "시장 상황에서 가장 영향이 컸던 요소는 무엇이었나요?",
+                    "options": [{"text": "금리 변화"}, {"text": "뉴스 충격"}, {"text": "수급 변화"}, {"text": "변동성 급등"}],
+                    "has_fixed_answer": True,
+                    "correct_answer_index": 0,
+                },
+                {
+                    "quiz_id": "Q3",
+                    "quiz_type": "reflection",
+                    "question": "다음 거래에서 우선 보완할 행동은 무엇인가요?",
+                    "options": [
+                        {"text": "진입/청산 기준 정리", "solution": "사전에 체크리스트를 만들고 진입·청산 기준을 문서화하세요."},
+                        {"text": "리스크 한도 설정", "solution": "포지션별 최대 손실 범위를 정하고 즉시 적용하세요."},
+                        {"text": "외부 신호 확인", "solution": "뉴스/거시 지표로 자신의 판단을 교차 검증하세요."},
+                        {"text": "기록과 복기 강화", "solution": "매매 후 기록을 남기고 반복 패턴을 찾아보세요."},
+                    ],
+                    "has_fixed_answer": False,
+                    "solution_required": True,
+                },
+            ],
+        }
+    }
+
+
+def _is_valid_quiz(data: Dict[str, Any]) -> bool:
+    quiz_set = data.get("quiz_set")
+    if not isinstance(quiz_set, dict):
+        return False
+    quizzes = quiz_set.get("quizzes")
+    if not isinstance(quizzes, list) or len(quizzes) != 3:
+        return False
+    for quiz in quizzes:
+        if not isinstance(quiz, dict):
+            return False
+        if not isinstance(quiz.get("quiz_id"), str):
+            return False
+        if quiz.get("quiz_type") not in ("multiple_choice", "reflection"):
+            return False
+        if not isinstance(quiz.get("question"), str):
+            return False
+        options = quiz.get("options")
+        if not isinstance(options, list) or len(options) != 4:
+            return False
+        for option in options:
+            if not isinstance(option, dict):
+                return False
+            if not isinstance(option.get("text"), str):
+                return False
+            if quiz.get("quiz_type") == "reflection":
+                if not isinstance(option.get("solution"), str):
+                    return False
+        if not isinstance(quiz.get("has_fixed_answer"), bool):
+            return False
+    return True
