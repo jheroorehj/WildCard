@@ -141,6 +141,58 @@ export interface N7NewsAnalysis {
   };
 }
 
+// === N8 손실 원인 분석 고도화 타입 ===
+export type CauseCategory = "internal" | "external";
+export type InternalSubcategory =
+  | "judgment_error"
+  | "emotional_trading"
+  | "timing_mistake"
+  | "risk_management"
+  | "insufficient_research";
+export type ExternalSubcategory =
+  | "market_condition"
+  | "company_news"
+  | "macro_event"
+  | "sector_rotation"
+  | "unexpected_event";
+export type ImpactLevel = "low" | "medium" | "high" | "critical";
+export type TimelineRelevance = "before_buy" | "during_hold" | "at_sell" | "throughout";
+export type EvidenceSource = "n6" | "n7" | "user_input";
+export type EvidenceType = "price" | "indicator" | "news" | "sentiment" | "user_decision";
+export type ConfidenceLevel = "low" | "medium" | "high";
+
+export interface Evidence {
+  source: EvidenceSource;
+  type: EvidenceType;
+  data_point: string;
+  interpretation: string;
+}
+
+export interface RootCause {
+  id: string;
+  category: CauseCategory;
+  subcategory: InternalSubcategory | ExternalSubcategory;
+  title: string;
+  description: string;
+  impact_score: number;
+  impact_level: ImpactLevel;
+  evidence: Evidence[];
+  timeline_relevance: TimelineRelevance;
+}
+
+export interface N8LossCauseAnalysis {
+  loss_check: string;
+  loss_amount_pct: string;
+  one_line_summary: string;
+  root_causes: RootCause[];
+  cause_breakdown: {
+    internal_ratio: number;
+    external_ratio: number;
+  };
+  detailed_explanation: string;
+  confidence_level: ConfidenceLevel;
+}
+
 export interface AnalysisResult {
   request_id: string;
   n10_loss_review_report?: {
@@ -159,12 +211,7 @@ export interface AnalysisResult {
     };
     uncertainty_level: string;
   };
-  n8_loss_cause_analysis?: {
-    loss_check: string;
-    root_causes: string[];
-    one_line_summary: string;
-    detailed_explanation: string;
-  };
+  n8_loss_cause_analysis?: N8LossCauseAnalysis;
   n8_market_context_analysis?: {
     news_at_loss_time: string[];
     market_situation_analysis: string;
