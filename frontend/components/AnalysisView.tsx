@@ -679,15 +679,22 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                     </button>
                   </div>
                   <div className="space-y-2">
-                    {expandedChat[i] ? (
-                      <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300">
-                        {msg.content}
-                      </p>
-                    ) : (
-                      <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap">
-                        {msg.content}
-                      </p>
-                    )}
+                    {(() => {
+                      const summary = msg.raw?.chat_summary || msg.content;
+                      const detail = msg.raw?.chat_detail;
+                      return (
+                        <>
+                          <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap">
+                            {summary}
+                          </p>
+                          {expandedChat[i] && detail ? (
+                            <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300">
+                              {detail}
+                            </p>
+                          ) : null}
+                        </>
+                      );
+                    })()}
                   </div>
                 </section>
               </div>
