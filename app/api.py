@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from collections import OrderedDict
 from datetime import datetime, date
 from typing import Any, Dict, List, Tuple, Optional
 from uuid import uuid4
@@ -43,6 +44,7 @@ class ChatMessage(BaseModel):
 class ChatRequest(BaseModel):
     history: List[ChatMessage] = []
     message: str
+    request_id: str | None = None
 
 
 class QuizRequest(BaseModel):
@@ -60,6 +62,9 @@ app.add_middleware(
 
 _embedding_service: EmbeddingService | None = None
 _graph = build_graph()
+_chat_graph = build_graph(entry_point="N11")
+_analysis_cache: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+_analysis_cache_limit = 50
 
 
 def _get_embedding_service() -> EmbeddingService:
@@ -71,6 +76,25 @@ def _get_embedding_service() -> EmbeddingService:
 
 def _safe_json(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, default=str)
+
+
+def _cache_analysis_result(
+    request_id: str,
+    state: Dict[str, Any],
+    result: Dict[str, Any],
+    metrics_summary: Optional[Dict[str, Any]],
+) -> None:
+    payload = {
+        "request_id": request_id,
+        "state": state,
+        "result": result,
+        "metrics_summary": metrics_summary,
+        "cached_at": datetime.now().isoformat(),
+    }
+    _analysis_cache[request_id] = payload
+    _analysis_cache.move_to_end(request_id)
+    while len(_analysis_cache) > _analysis_cache_limit:
+        _analysis_cache.popitem(last=False)
 
 
 def _save_to_supabase(request_id: str, state: Dict[str, Any], results: Dict[str, Any]) -> None:
@@ -210,11 +234,38 @@ async def analyze(req: AnalyzeRequest) -> Dict[str, Any]:
     if metrics_report:
         merged["metrics_summary"] = metrics_report.get("summary", {})
 
+    _cache_analysis_result(
+        request_id=request_id,
+        state=state,
+        result=result,
+        metrics_summary=merged.get("metrics_summary"),
+    )
+
     return merged
 
 
 @app.post("/v1/chat")
 async def chat(req: ChatRequest) -> Dict[str, Any]:
+    if req.request_id:
+        print(f"[CHAT] request_id received: {req.request_id}")
+        cached = _analysis_cache.get(req.request_id)
+        if cached:
+            print(f"[CHAT] cache hit: {req.request_id}")
+            expert_state = {
+                "user_message": req.message,
+                "analysis_result": cached,
+                "chat_history": [m.model_dump() for m in req.history[-10:]],
+                "chat_mode": True,
+            }
+            expert_result = await asyncio.to_thread(_chat_graph.invoke, expert_state)
+            chat_response = expert_result.get("n11_chat_response") or {}
+            return {
+                "summary": chat_response.get("summary", ""),
+                "detail": chat_response.get("detail", ""),
+                "request_id": req.request_id,
+            }
+        print(f"[CHAT] cache miss: {req.request_id}")
+
     context = "\n".join([f"{m.role}: {m.content}" for m in req.history][-10:])
     state = {"user_message": req.message, "context": context}
     result = node9_learning_pattern_analyzer(state)

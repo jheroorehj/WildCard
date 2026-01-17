@@ -260,5 +260,7 @@ export interface Message {
       };
       uncertainty_level: string;
     };
+    chat_summary?: string;
+    chat_detail?: string;
   };
 }

@@ -30,3 +30,9 @@ class MainState(TypedDict, total=False):
 
     # N4: 채팅 진입
     chat_entry: Dict[str, object]
+
+    # N11: 투자 전문가 챗
+    chat_mode: bool
+    analysis_result: Dict[str, object]
+    chat_history: list
+    n11_chat_response: Dict[str, object]

@@ -21,6 +21,7 @@ const App: React.FC = () => {
   });
   const [loading, setLoading] = useState<boolean>(false);
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
+  const [requestId, setRequestId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -56,6 +57,7 @@ const App: React.FC = () => {
     setStockInput('');
     setStep(1);
     setShowCustomPeriod({});
+    setRequestId(null);
     setView('form');
   };
 
@@ -73,6 +75,7 @@ const App: React.FC = () => {
     try {
       const result = await analyzeInvestmentLoss(formData);
       setAnalysis(result);
+      setRequestId(result?.request_id ?? null);
       setMessages([]); 
       setExpanded({
         lossReason: false,
@@ -145,15 +148,24 @@ const App: React.FC = () => {
     try {
       const response = await chatWithAnalyst(
         currentMessages.map(m => ({ role: m.role, content: m.content })),
-        text
+        text,
+        requestId
       );
-      const message = typeof response?.message === 'string' ? response.message : '';
-      // 새 메시지는 기본적으로 확장된 상태로 추가
+      const responseSummary = typeof response?.summary === 'string' ? response.summary : '';
+      const responseDetail = typeof response?.detail === 'string' ? response.detail : '';
+      const fallbackMessage = typeof response?.message === 'string' ? response.message : '';
+      const message = responseSummary || responseDetail || fallbackMessage;
       const newMsgIndex = messages.length + 1;
-      setExpandedChat(prev => ({ ...prev, [newMsgIndex]: true }));
+      setExpandedChat(prev => ({ ...prev, [newMsgIndex]: false }));
       setMessages(prev => [
         ...prev,
-        { role: 'assistant' as const, content: message, raw: response?.raw }
+        {
+          role: 'assistant' as const,
+          content: message,
+          raw: responseSummary || responseDetail
+            ? { chat_summary: responseSummary, chat_detail: responseDetail }
+            : response?.raw
+        }
       ]);
     } catch (error) {
       console.error(error);
@@ -245,6 +257,7 @@ const App: React.FC = () => {
 
     setFormData(dummyFormData);
     setAnalysis(dummyAnalysis);
+    setRequestId(dummyAnalysis.request_id);
     setMessages([]);
     setExpanded({ lossReason: false, marketAnalysis: false, patternAnalysis: false, learningPath: false });
     setView('analysis');

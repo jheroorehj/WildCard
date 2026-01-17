@@ -39,7 +39,8 @@ export const analyzeInvestmentLoss = async (
 
 export const chatWithAnalyst = async (
   history: { role: string; content: string }[],
-  message: string
+  message: string,
+  requestId?: string | null
 ) => {
   const response = await fetch(`${API_BASE_URL}/v1/chat`, {
     method: "POST",
@@ -49,6 +50,7 @@ export const chatWithAnalyst = async (
     body: JSON.stringify({
       history,
       message,
+      request_id: requestId || undefined,
     }),
   });
 
