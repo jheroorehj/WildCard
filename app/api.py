@@ -345,6 +345,12 @@ async def analyze(req: AnalyzeRequest) -> Dict[str, Any]:
     return merged
 
 
+def _is_personality_analysis_request(message: str) -> bool:
+    """사용자가 투자 성향 분석을 요청하는지 확인"""
+    keywords = ["투자 성향", "나의 성향", "성향을 분석", "성향 분석"]
+    return any(kw in message for kw in keywords)
+
+
 @app.post("/v1/chat")
 async def chat(req: ChatRequest) -> Dict[str, Any]:
     if req.request_id:
@@ -352,6 +358,50 @@ async def chat(req: ChatRequest) -> Dict[str, Any]:
         cached = _analysis_cache.get(req.request_id)
         if cached:
             print(f"[CHAT] cache hit: {req.request_id}")
+
+            # 성향 분석 요청인 경우: 캐시된 정보와 사용자 입력을 기반으로 N9 재실행
+            if _is_personality_analysis_request(req.message):
+                print(f"[CHAT] personality analysis request detected")
+                cached_state = cached.get("state", {})
+                cached_result = cached.get("result", {})
+
+                # N9에 전달할 입력 구성 (기존 분석 정보 + 사용자 성향 입력)
+                n9_state = {
+                    "user_message": req.message,
+                    "investment_reason": req.message,  # 사용자가 입력한 성향 정보
+                    "n8_loss_cause_analysis": cached_result.get("n8_loss_cause_analysis"),
+                    "n8_market_context_analysis": cached_result.get("n8_market_context_analysis"),
+                    "n9_input": {
+                        "investment_reason": req.message,
+                        "loss_cause_summary": cached_result.get("n8_loss_cause_analysis", {}).get("one_line_summary", ""),
+                        "loss_cause_details": [
+                            c.get("title", "") for c in cached_result.get("n8_loss_cause_analysis", {}).get("root_causes", [])
+                        ],
+                    },
+                }
+
+                # N9 재실행
+                n9_result = await asyncio.to_thread(node9_learning_pattern_analyzer, n9_state)
+                learning_pattern = n9_result.get("learning_pattern_analysis", {})
+
+                # 캐시 업데이트
+                cached["result"]["learning_pattern_analysis"] = learning_pattern
+
+                # 응답 메시지 생성
+                character = learning_pattern.get("investor_character", {})
+                character_type = character.get("type", "투자자")
+                character_desc = character.get("description", "")
+
+                response_message = f"입력하신 성향을 바탕으로 분석 결과를 업데이트했어요. 당신은 '{character_type}' 유형이에요. {character_desc}"
+
+                return {
+                    "summary": response_message,
+                    "detail": "",
+                    "request_id": req.request_id,
+                    "raw": {"learning_pattern_analysis": learning_pattern},
+                }
+
+            # 일반 채팅 요청
             expert_state = {
                 "user_message": req.message,
                 "analysis_result": cached,

@@ -105,6 +105,96 @@ export interface N9LearningPatternResponse {
   intent_hint: string;
 }
 
+// === N9 학습 패턴 분석 고도화 타입 ===
+export type BiasFrequency = "low" | "medium" | "high";
+export type MissionDifficulty = "easy" | "medium" | "hard";
+export type MissionImpact = "low" | "medium" | "high";
+export type UncertaintyLevel = "low" | "medium" | "high";
+
+export interface InvestorCharacter {
+  type: string;
+  description: string;
+  behavioral_bias: string;
+}
+
+export interface ProfileMetric {
+  score: number;
+  label: string;
+  bias_detected: string | null;
+}
+
+export interface ProfileMetrics {
+  information_sensitivity: ProfileMetric;
+  analysis_depth: ProfileMetric;
+  risk_management: ProfileMetric;
+  decisiveness: ProfileMetric;
+  emotional_control: ProfileMetric;
+  learning_adaptability: ProfileMetric;
+}
+
+export interface PrimaryBias {
+  name: string;
+  english: string;
+  description: string;
+  impact: string;
+}
+
+export interface SecondaryBias {
+  name: string;
+  english: string;
+  description: string;
+}
+
+export interface CognitiveAnalysis {
+  primary_bias: PrimaryBias;
+  secondary_biases: SecondaryBias[];
+}
+
+export interface DecisionProblem {
+  problem_type: string;
+  psychological_trigger: string;
+  situation: string;
+  thought_pattern: string;
+  consequence: string;
+  frequency: BiasFrequency;
+}
+
+export interface ActionMission {
+  mission_id: string;
+  priority: number;
+  title: string;
+  description: string;
+  behavioral_target: string;
+  expected_outcome: string;
+  difficulty: MissionDifficulty;
+  estimated_impact: MissionImpact;
+}
+
+export interface N9LearningPatternAnalysis {
+  investor_character: InvestorCharacter;
+  profile_metrics: ProfileMetrics;
+  cognitive_analysis: CognitiveAnalysis;
+  decision_problems: DecisionProblem[];
+  // action_missions는 N10으로 이동됨
+  uncertainty_level: UncertaintyLevel;
+}
+
+// N10 학습 튜터 타입
+export interface N10LearningTutor {
+  custom_learning_path: {
+    path_summary: string;
+    learning_materials: string[];
+    practice_steps: string[];
+    recommended_topics: string[];
+  };
+  investment_advisor: {
+    advisor_message: string;
+    recommended_questions: string[];
+  };
+  action_missions: ActionMission[];
+  uncertainty_level: UncertaintyLevel;
+}
+
 export interface N7NewsAnalysis {
   news_context: {
     ticker: string;
@@ -196,20 +286,22 @@ export interface N8LossCauseAnalysis {
 export interface AnalysisResult {
   request_id: string;
   n10_loss_review_report?: {
-    report_title: string;
-    overall_summary: string;
-    node_summaries: {
+    report_title?: string;
+    overall_summary?: string;
+    node_summaries?: {
       n6: { summary: string; details: string[] };
       n7: { summary: string; details: string[] };
       n8: { summary: string; details: string[] };
       n9: { summary: string; details: string[] };
     };
-    learning_materials: {
+    learning_materials?: {
       key_takeaways: string[];
       recommended_topics: string[];
       practice_steps: string[];
     };
-    uncertainty_level: string;
+    // 새로운 N10 learning_tutor 구조
+    learning_tutor?: N10LearningTutor;
+    uncertainty_level?: string;
   };
   n8_loss_cause_analysis?: N8LossCauseAnalysis;
   n8_market_context_analysis?: {
@@ -217,18 +309,7 @@ export interface AnalysisResult {
     market_situation_analysis: string;
     related_news: string[];
   };
-  learning_pattern_analysis?: {
-    pattern_summary: string;
-    pattern_strengths: string[];
-    pattern_weaknesses: string[];
-    learning_recommendation: {
-      focus_area: string;
-      learning_reason: string;
-      learning_steps: string[];
-      recommended_topics: string[];
-    };
-    uncertainty_level: string;
-  };
+  learning_pattern_analysis?: N9LearningPatternAnalysis;
   n7_news_analysis?: N7NewsAnalysis;
 }
 
@@ -248,18 +329,7 @@ export interface Message {
   role: 'user' | 'assistant';
   content: string;
   raw?: {
-    learning_pattern_analysis?: {
-      pattern_summary: string;
-      pattern_strengths: string[];
-      pattern_weaknesses: string[];
-      learning_recommendation: {
-        focus_area: string;
-        learning_reason: string;
-        learning_steps: string[];
-        recommended_topics: string[];
-      };
-      uncertainty_level: string;
-    };
+    learning_pattern_analysis?: N9LearningPatternAnalysis;
     chat_summary?: string;
     chat_detail?: string;
   };

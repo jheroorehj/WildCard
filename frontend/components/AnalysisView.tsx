@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { AnalysisResult, Message, InvestmentFormData, RootCause, Evidence, N8LossCauseAnalysis, Quiz } from '../types';
+import { AnalysisResult, Message, InvestmentFormData, RootCause, Evidence, N8LossCauseAnalysis, Quiz, N9LearningPatternAnalysis, ActionMission } from '../types';
 import { ICONS, CAUSE_CATEGORY_META, IMPACT_LEVEL_META } from '../constants';
 import { generateInvestmentQuiz } from '../services/solarService';
+import { RadarChart, InvestorPersonaCard, CognitiveBiasCard, DecisionProblemCard, ActionMissionCard } from './N9';
 
 // === 하위 호환성: 구버전 데이터 변환 ===
 const isLegacyFormat = (lossCause: any): boolean => {
@@ -206,6 +207,10 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   const [selectedOptionIndex, setSelectedOptionIndex] = useState<number | null>(null);
   const [quizFinished, setQuizFinished] = useState(false);
 
+  // N9 성향 입력 모달 상태
+  const [personalityModalOpen, setPersonalityModalOpen] = useState(false);
+  const [personalityInput, setPersonalityInput] = useState('');
+
   useEffect(() => {
     setQuizOpen(false);
     setQuizzes([]);
@@ -254,6 +259,8 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   const tutor = report?.learning_tutor;
   const learningPath = tutor?.custom_learning_path;
   const advisor = tutor?.investment_advisor;
+  // action_missions는 N10(tutor)에서 가져옴
+  const actionMissions: ActionMission[] = tutor?.action_missions || [];
 
   // 손실 원인 분석 데이터 정규화 (하위 호환성)
   const lossCause = normalizeLossCauseData(lossCauseRaw);
@@ -262,17 +269,19 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
   const internalCauses = lossCause?.root_causes?.filter(c => c.category === 'internal') || [];
   const externalCauses = lossCause?.root_causes?.filter(c => c.category === 'external') || [];
 
-  const marketAnalysisTitle =
-    marketContext?.market_situation_analysis || '시장 상황 분석';
-  const marketAnalysis =
+  const marketAnalysisFull =
     marketContext?.market_situation_analysis || '';
+  // 요약: 첫 문장 또는 50자까지
+  const getMarketSummary = (text: string) => {
+    if (!text) return '시장 상황 분석';
+    const firstSentence = text.split(/[.!?。]/)[0];
+    if (firstSentence.length <= 60) return firstSentence + (text.length > firstSentence.length ? '...' : '');
+    return text.slice(0, 50) + '...';
+  };
+  const marketAnalysisSummary = getMarketSummary(marketAnalysisFull);
 
-  const patternAnalysisTitle = pattern?.pattern_summary || '투자 패턴 분석';
-  const patternAnalysisDetails = [
-    ...(pattern?.pattern_strengths || []),
-    ...(pattern?.pattern_weaknesses || [])
-  ].filter(Boolean);
-  const patternAnalysis = patternAnalysisDetails.join('\n\n');
+  // N9 학습 패턴 분석 (새 구조)
+  const hasN9NewStructure = pattern && 'investor_character' in pattern;
 
   const learningMaterials = learningPath?.learning_materials || [];
   const learningPathSummary = learningPath?.path_summary || '학습 경로';
@@ -417,11 +426,24 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                 </button>
               </div>
               <div className="space-y-2">
-                <h5 className="text-base font-bold text-white tracking-tight">{marketAnalysisTitle}</h5>
+                {/* 기본: 요약문만 표시 */}
+                <h5 className="text-base font-bold text-white tracking-tight">{marketAnalysisSummary}</h5>
+
                 {expanded.marketAnalysis && (
-                  <>
-                    {newsItems.length ? (
-                      <div className="space-y-2 pt-3">
+                  <div className="space-y-3 pt-2 animate-in fade-in slide-in-from-top-1 duration-300">
+                    {/* 상세 분석 (뉴스 위에 표시) */}
+                    {marketAnalysisFull && marketAnalysisFull !== marketAnalysisSummary && (
+                      <div className="bg-slate-800/40 rounded-xl p-3 border border-indigo-500/10">
+                        <p className="text-[12px] text-slate-300 leading-relaxed whitespace-pre-wrap">
+                          {marketAnalysisFull}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* 관련 뉴스 */}
+                    {newsItems.length > 0 && (
+                      <div className="space-y-2">
+                        <h6 className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">📰 관련 뉴스</h6>
                         {newsItems.map((item, idx) => (
                           <a
                             key={idx}
@@ -445,35 +467,94 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                           </a>
                         ))}
                       </div>
-                    ) : null}
-                  </>
+                    )}
+                  </div>
                 )}
               </div>
             </section>
 
-            {/* 투자 패턴 분석 */}
-            <section className="bg-slate-900/40 border border-emerald-500/20 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-100 relative">
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="text-emerald-400 shrink-0">{ICONS.Activity}</div>
-                  <h4 className="text-emerald-400 text-[11px] font-black uppercase tracking-tight">투자 패턴 분석</h4>
+            {/* 투자 패턴 분석 (N9 고도화) */}
+            {hasN9NewStructure && pattern && (
+              <section className="bg-slate-900/40 border border-emerald-500/20 p-5 rounded-3xl shadow-sm animate-in fade-in slide-in-from-bottom-4 delay-100 relative">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="text-emerald-400 shrink-0">{ICONS.Activity}</div>
+                    <h4 className="text-emerald-400 text-[11px] font-black uppercase tracking-tight">투자 패턴 분석</h4>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setPersonalityModalOpen(true)}
+                      className="p-1 rounded-md transition-colors text-slate-600 hover:text-emerald-400 hover:bg-white/5"
+                      title="나의 성향 직접 입력하기"
+                    >
+                      {ICONS.UserEdit}
+                    </button>
+                    <button
+                      onClick={() => toggleExpand('patternAnalysis')}
+                      className={`p-1 rounded-md transition-colors ${expanded.patternAnalysis ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-600 hover:text-emerald-400 hover:bg-white/5'}`}
+                    >
+                      {ICONS.Search}
+                    </button>
+                  </div>
                 </div>
-                <button 
-                  onClick={() => toggleExpand('patternAnalysis')}
-                  className={`p-1 rounded-md transition-colors ${expanded.patternAnalysis ? 'bg-emerald-500/20 text-emerald-400' : 'text-slate-600 hover:text-emerald-400 hover:bg-white/5'}`}
-                >
-                  {ICONS.Search}
-                </button>
-              </div>
-              <div className="space-y-2">
-                <h5 className="text-base font-bold text-white tracking-tight">{patternAnalysisTitle}</h5>
+
+                {/* 투자자 캐릭터 */}
+                <InvestorPersonaCard character={pattern.investor_character} />
+
+                {/* 확장 시 상세 내용 */}
                 {expanded.patternAnalysis && (
-                  <p className="text-[11px] text-slate-300 font-medium leading-relaxed opacity-90 whitespace-pre-wrap animate-in fade-in slide-in-from-top-1 duration-300">
-                    {patternAnalysis}
-                  </p>
+                  <div className="space-y-6 mt-6 animate-in fade-in slide-in-from-top-1 duration-300">
+                    {/* 레이더 차트 */}
+                    <div className="bg-slate-800/30 rounded-2xl p-4">
+                      <h5 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3 text-center">
+                        📊 투자 성향 분석
+                      </h5>
+                      <RadarChart metrics={pattern.profile_metrics} />
+                    </div>
+
+                    {/* 인지 편향 분석 */}
+                    <div>
+                      <h5 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                        ⚠️ 감지된 인지 편향
+                      </h5>
+                      <CognitiveBiasCard analysis={pattern.cognitive_analysis} />
+                    </div>
+
+                    {/* 의사결정 문제점 */}
+                    <div>
+                      <h5 className="text-[11px] text-slate-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                        🎯 의사결정 패턴 분석
+                      </h5>
+                      <DecisionProblemCard problems={pattern.decision_problems} />
+                    </div>
+
+                    {/* 불확실성 레벨 + 안내 메시지 */}
+                    <div className="space-y-2">
+                      {/* 정보 부족 안내 (medium/high일 때) */}
+                      {(pattern.uncertainty_level === 'medium' || pattern.uncertainty_level === 'high') && (
+                        <div className="flex items-start gap-2 p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl">
+                          <span className="text-amber-400 text-sm shrink-0">💡</span>
+                          <p className="text-[11px] text-amber-300/90 leading-relaxed">
+                            {pattern.uncertainty_level === 'high'
+                              ? '정보가 부족하여 분석이 완벽하지 않을 수 있어요. 투자 근거를 더 자세히 적어주시면 정확한 분석이 가능해요!'
+                              : '더 자세한 투자 근거를 입력하시면 더 정확한 분석 결과를 받아보실 수 있어요.'}
+                          </p>
+                        </div>
+                      )}
+                      <div className="flex justify-end">
+                        <span className={`text-[9px] px-2 py-0.5 rounded-full ${
+                          pattern.uncertainty_level === 'low' ? 'bg-green-500/20 text-green-400' :
+                          pattern.uncertainty_level === 'medium' ? 'bg-yellow-500/20 text-yellow-400' :
+                          'bg-slate-500/20 text-slate-400'
+                        }`}>
+                          분석 신뢰도: {pattern.uncertainty_level === 'low' ? '높음' : pattern.uncertainty_level === 'medium' ? '보통' : '낮음'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </div>
-            </section>
+              </section>
+            )}
 
             {/* 맞춤형 투자 학습 경로 */}
             <section className="bg-slate-900/60 border border-blue-500/10 p-5 rounded-3xl shadow-xl animate-in fade-in slide-in-from-bottom-4 delay-150 relative">
@@ -532,6 +613,16 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
                             <p className="text-[12px] text-slate-200 font-medium leading-tight">{item}</p>
                           </div>
                         ))}
+                      </div>
+                    )}
+
+                    {/* 오늘의 투자 미션 (N10에서 생성) */}
+                    {actionMissions.length > 0 && (
+                      <div className="mt-4 pt-4 border-t border-blue-500/10">
+                        <h5 className="text-[11px] text-blue-400 font-bold uppercase tracking-wider mb-3 flex items-center gap-2">
+                          🚀 오늘의 투자 미션
+                        </h5>
+                        <ActionMissionCard missions={actionMissions} />
                       </div>
                     )}
                   </div>
@@ -740,17 +831,80 @@ export const AnalysisView: React.FC<AnalysisViewProps> = ({
 
       <div className="p-3 border-t border-white/5 bg-slate-950/90 backdrop-blur-2xl shrink-0 sticky bottom-0 z-30">
         <div className="relative flex items-center bg-white/5 rounded-xl border border-white/10 focus-within:border-blue-500/50 transition-all px-3 py-1 shadow-lg">
-          <input 
-            type="text" 
-            value={input} 
-            onChange={e => setInput(e.target.value)} 
-            onKeyDown={e => e.key === 'Enter' && handleSendMessage()} 
-            placeholder="추가 질문을 입력하세요" 
-            className="flex-1 bg-transparent border-none outline-none py-1.5 text-xs text-slate-100 placeholder:text-slate-600" 
+          <input
+            type="text"
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleSendMessage()}
+            placeholder="추가 질문을 입력하세요"
+            className="flex-1 bg-transparent border-none outline-none py-1.5 text-xs text-slate-100 placeholder:text-slate-600"
           />
           <button onClick={() => handleSendMessage()} className="p-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all active:scale-90">{ICONS.Send}</button>
         </div>
       </div>
+
+      {/* 성향 입력 모달 */}
+      {personalityModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-slate-900 border border-emerald-500/30 rounded-3xl p-6 mx-4 max-w-sm w-full shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="text-emerald-400">{ICONS.UserEdit}</div>
+              <h3 className="text-white text-sm font-bold">나의 투자 성향 입력</h3>
+            </div>
+
+            <p className="text-[11px] text-slate-400 mb-4 leading-relaxed">
+              더 정확한 분석을 위해 평소 투자 스타일이나 성향을 자유롭게 입력해 주세요.
+            </p>
+
+            <div className="space-y-2 mb-4">
+              <p className="text-[10px] text-slate-500 font-medium">예시:</p>
+              <div className="flex flex-wrap gap-1.5">
+                {['손절을 잘 못해요', '뉴스에 민감해요', '친구 추천을 많이 따라요', '급등주를 추격해요'].map((example) => (
+                  <button
+                    key={example}
+                    onClick={() => setPersonalityInput(prev => prev ? `${prev}, ${example}` : example)}
+                    className="px-2 py-1 bg-slate-800/60 hover:bg-emerald-500/20 border border-slate-700 hover:border-emerald-500/40 rounded-lg text-[10px] text-slate-400 hover:text-emerald-400 transition-all"
+                  >
+                    {example}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <textarea
+              value={personalityInput}
+              onChange={(e) => setPersonalityInput(e.target.value)}
+              placeholder="예: 손절을 잘 못하고, 뉴스에 민감하게 반응하는 편이에요..."
+              className="w-full h-24 bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-[12px] text-slate-200 placeholder:text-slate-600 focus:border-emerald-500/50 focus:outline-none resize-none"
+            />
+
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => {
+                  setPersonalityModalOpen(false);
+                  setPersonalityInput('');
+                }}
+                className="flex-1 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-[11px] font-bold transition-all"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => {
+                  if (personalityInput.trim()) {
+                    // 성향 입력을 채팅으로 전송하여 분석 요청
+                    handleSendMessage(`나의 투자 성향을 분석해줘: ${personalityInput}`);
+                  }
+                  setPersonalityModalOpen(false);
+                  setPersonalityInput('');
+                }}
+                className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-[11px] font-bold transition-all shadow-lg shadow-emerald-600/30"
+              >
+                분석 요청
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

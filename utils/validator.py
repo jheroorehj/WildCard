@@ -367,42 +367,130 @@ def validate_node8(data: Dict[str, Any]) -> bool:
 
 def validate_node9(data: Dict[str, Any]) -> bool:
     """
-    Node9 ?? JSON ?? ??? ?? (?? ?? ??)
+    Node9 JSON 출력 검증 (행동경제학 기반 새 구조)
+    action_missions는 N10으로 이동됨
     """
     allowed_uncertainty = {"low", "medium", "high"}
+    allowed_frequency = {"low", "medium", "high"}
+    profile_keys = {
+        "information_sensitivity",
+        "analysis_depth",
+        "risk_management",
+        "decisiveness",
+        "emotional_control",
+        "learning_adaptability",
+    }
 
     analysis = data.get("learning_pattern_analysis")
     if not isinstance(analysis, dict):
         return False
 
-    if not isinstance(analysis.get("pattern_summary"), str):
+    # investor_character 검증
+    character = analysis.get("investor_character")
+    if not isinstance(character, dict):
+        return False
+    if not isinstance(character.get("type"), str):
+        return False
+    if not isinstance(character.get("description"), str):
+        return False
+    if not isinstance(character.get("behavioral_bias"), str):
         return False
 
-    strengths = analysis.get("pattern_strengths")
-    if not isinstance(strengths, list) or any(not isinstance(item, str) for item in strengths):
+    # profile_metrics 검증
+    metrics = analysis.get("profile_metrics")
+    if not isinstance(metrics, dict):
         return False
-
-    weaknesses = analysis.get("pattern_weaknesses")
-    if not isinstance(weaknesses, list) or any(not isinstance(item, str) for item in weaknesses):
-        return False
-
-    recommendation = analysis.get("learning_recommendation")
-    if not isinstance(recommendation, dict):
-        return False
-
-    for key in ("focus_area", "learning_reason"):
-        if not isinstance(recommendation.get(key), str):
+    for key in profile_keys:
+        metric = metrics.get(key)
+        if not isinstance(metric, dict):
+            return False
+        score = metric.get("score")
+        if not isinstance(score, (int, float)) or not (0 <= score <= 100):
+            return False
+        if not isinstance(metric.get("label"), str):
+            return False
+        # bias_detected는 null 또는 string
+        bias = metric.get("bias_detected")
+        if bias is not None and not isinstance(bias, str):
             return False
 
-    steps = recommendation.get("learning_steps")
-    if not isinstance(steps, list) or any(not isinstance(item, str) for item in steps):
+    # cognitive_analysis 검증
+    cognitive = analysis.get("cognitive_analysis")
+    if not isinstance(cognitive, dict):
         return False
 
-    topics = recommendation.get("recommended_topics")
-    if not isinstance(topics, list) or any(not isinstance(item, str) for item in topics):
+    primary = cognitive.get("primary_bias")
+    if not isinstance(primary, dict):
         return False
+    for key in ("name", "english", "description", "impact"):
+        if not isinstance(primary.get(key), str):
+            return False
 
+    secondary = cognitive.get("secondary_biases")
+    if not isinstance(secondary, list):
+        return False
+    for bias in secondary:
+        if not isinstance(bias, dict):
+            return False
+        for key in ("name", "english", "description"):
+            if not isinstance(bias.get(key), str):
+                return False
+
+    # decision_problems 검증
+    problems = analysis.get("decision_problems")
+    if not isinstance(problems, list) or len(problems) < 1:
+        return False
+    for problem in problems:
+        if not isinstance(problem, dict):
+            return False
+        for key in (
+            "problem_type",
+            "psychological_trigger",
+            "situation",
+            "thought_pattern",
+            "consequence",
+        ):
+            if not isinstance(problem.get(key), str):
+                return False
+        if problem.get("frequency") not in allowed_frequency:
+            return False
+
+    # uncertainty_level 검증
     if analysis.get("uncertainty_level") not in allowed_uncertainty:
         return False
+
+    return True
+
+
+def validate_action_missions(missions: list) -> bool:
+    """
+    action_missions 검증 (N10에서 사용)
+    """
+    allowed_difficulty = {"easy", "medium", "hard"}
+    allowed_impact = {"low", "medium", "high"}
+
+    if not isinstance(missions, list) or len(missions) < 1:
+        return False
+
+    for mission in missions:
+        if not isinstance(mission, dict):
+            return False
+        if not isinstance(mission.get("mission_id"), str):
+            return False
+        priority = mission.get("priority")
+        if not isinstance(priority, int) or not (1 <= priority <= 3):
+            return False
+        for key in (
+            "title",
+            "description",
+            "behavioral_target",
+            "expected_outcome",
+        ):
+            if not isinstance(mission.get(key), str):
+                return False
+        if mission.get("difficulty") not in allowed_difficulty:
+            return False
+        if mission.get("estimated_impact") not in allowed_impact:
+            return False
 
     return True

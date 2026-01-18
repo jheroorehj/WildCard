@@ -2,17 +2,69 @@
 
 투자 손실을 분석하고 학습 경로를 제공하는 LangGraph 기반 AI 에이전트 시스템
 
+## 📋 최근 업데이트
+
+### v2.0 - N9 투자 패턴 분석 행동경제학 고도화 (2025-01)
+
+#### N9 Learning Pattern Analyzer 전면 개편
+
+- 행동경제학 기반 투자 심리 분석 (10가지 인지 편향 진단)
+- 6축 프로필 메트릭 시스템 (정보 민감도, 분석 깊이, 리스크 관리, 결단력, 감정 통제, 학습 적응력)
+- 투자자 캐릭터 타입 진단 (예: "뉴스 헌터", "본전 수호자", "트렌드 서퍼")
+- 의사결정 문제점 분석 (심리적 트리거, 상황, 사고 패턴, 결과)
+- action_missions를 N10으로 이동
+
+#### N10 Learning Tutor 구조 개선
+
+- N9에서 action_missions 수신하여 미션 카드 렌더링
+- 행동 미션 생성 가이드라인 추가 (mission_id, priority, difficulty, estimated_impact)
+- 폴백 미션 생성 로직 강화
+
+#### 프론트엔드 N9 섹션 고도화
+
+- SVG 기반 육각형 레이더 차트 (차트 라이브러리 없이 구현)
+- 취약점 시각적 강조 (40점 이하: 빨간 펄스 애니메이션 + 경고 아이콘)
+- 인지 편향 분석 카드 (주요 편향, 보조 편향)
+- 의사결정 문제점 카드 (빈도 인디케이터)
+- 컴포넌트 분리: `frontend/components/N9/`
+
+#### 성능 최적화
+
+- N6/N7 병렬 처리 (`nodes/n6_n7_parallel.py`)
+- ThreadPoolExecutor 기반 동시 실행
+
+#### UX 개선
+
+- 시장 상황 분석 섹션: 기본 요약 + 확장 시 상세 표시
+- "나의 투자 성향 입력" 시 현재 분석에 즉시 반영 (새 채팅 대신)
+
+### 기타 개선
+
+- 타입 정의 확장 (`frontend/types.ts`)
+- 검증 함수 강화 (`utils/validator.py`)
+- 프론트엔드 상수 정리 (`frontend/constants.tsx`)
+
+---
+
 ## 🏗 프로젝트 구조
 
 ```
 WildCard/
 ├── .env.local                      # 환경 변수 설정 (gitignore됨)
 ├── frontend/                       # React 프론트엔드
+│   ├── components/
+│   │   ├── N9/                     # N9 전용 컴포넌트
+│   │   │   ├── RadarChart.tsx      # 육각형 레이더 차트
+│   │   │   └── index.ts
+│   │   └── AnalysisView.tsx        # 메인 분석 뷰
+│   └── types.ts                    # 타입 정의
 ├── core/                           # LLM 코어 모듈
+├── nodes/                          # 노드 유틸리티
+│   └── n6_n7_parallel.py           # N6/N7 병렬 처리
 ├── N6_Stock_Analyst/               # 주식 분석 노드
 ├── N7_News_Summarizer/             # 뉴스 요약 노드
 ├── N8_Loss_Analyst/                # 손실 분석 노드
-├── N9_Learning_Pattern_Analyzer/   # 학습 패턴 분석 노드
+├── N9_Learning_Pattern_Analyzer/   # 학습 패턴 분석 노드 (행동경제학 기반)
 ├── N10_Learning_Tutor/             # 투자 학습 튜터
 ├── state/                          # 상태 관리
 ├── utils/                          # 유틸리티

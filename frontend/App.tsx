@@ -157,6 +157,18 @@ const App: React.FC = () => {
       const message = responseSummary || responseDetail || fallbackMessage;
       const newMsgIndex = messages.length + 1;
       setExpandedChat(prev => ({ ...prev, [newMsgIndex]: false }));
+
+      // 성향 분석 결과가 포함되어 있으면 기존 analysis에 반영
+      const rawData = response?.raw;
+      if (rawData?.learning_pattern_analysis && analysis) {
+        setAnalysis(prev => prev ? {
+          ...prev,
+          learning_pattern_analysis: rawData.learning_pattern_analysis
+        } : prev);
+        // 패턴 분석 섹션 자동 확장
+        setExpanded(prev => ({ ...prev, patternAnalysis: true }));
+      }
+
       setMessages(prev => [
         ...prev,
         {
@@ -164,7 +176,7 @@ const App: React.FC = () => {
           content: message,
           raw: responseSummary || responseDetail
             ? { chat_summary: responseSummary, chat_detail: responseDetail }
-            : response?.raw
+            : rawData
         }
       ]);
     } catch (error) {
